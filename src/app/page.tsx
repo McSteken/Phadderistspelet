@@ -3,43 +3,30 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db} from "../../lib/firebase";
+import { db, storage } from "../../lib/firebase";
+import { getDownloadURL, ref } from "firebase/storage"; // Import necessary Firebase Storage functions
+import { useRouter } from "next/navigation";
+
+import Card from "./components/card";
 
 export default function Home() {
-  const [cardText, setCardText] = useState<string | null>(null);
+  const router = useRouter();
 
-  useEffect(() => {
-    const fetchCard = async () => {
-      const docRef = doc(db, "cards", "test");
-      const docSnap = await getDoc(docRef);
+  const goToLogin = () => {
+    router.push("/login");
+  }
 
-      console.log("docSnap.exists():", docSnap.exists()); // Log if the doc exists
-      console.log("docSnap.data():", docSnap.data()); 
+  return(     
+    <main>
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+        <h1 className="text-2xl font-bold">Welcome to the game!</h1>
+        <button onClick={goToLogin} className="p-2 bg-blue-500 text-white rounded">Login</button>
+      </div>
 
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setCardText(data.text); // assuming the field is called "text"
-      } else {
-        setCardText("Card not found!");
-      }
-    };
+    <Card cardId="Legionen" />
+    
+    </main>
 
-    fetchCard();
-  }, []);
 
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-
-        {cardText && (
-          //<p className="text-center text-xl font-semibold">{cardText}</p>
-          <p>{cardText}</p>
-        )}
-        <p>hej</p>
-
-        
-      </main>
-      
-    </div>
-  );
+  )
 }
