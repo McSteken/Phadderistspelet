@@ -73,7 +73,8 @@ export default function Home() {
 
           <div className="flex flex-col items-center gap-4">
             <h1 className="text-2xl font-bold">Välkommen, {username}.</h1>
-            <button onClick={() => router.push("/board")} className="p-2 bg-green-500 text-white rounded">Play</button>
+            <button onClick={() => router.push("/play")} className="p-2 bg-green-500 text-white rounded">Play</button>
+            <button onClick={() => router.push("/board")} className="p-2 bg-green-500 text-white rounded">Deck eller nåt</button>
             <button onClick={() => router.push("/collection")} className="p-2 bg-green-500 text-white rounded">Cards</button>
 
 

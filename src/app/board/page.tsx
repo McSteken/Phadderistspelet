@@ -4,16 +4,17 @@ import { useState } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { getDownloadURL, ref } from "firebase/storage";
 import { db, storage } from "../../../lib/firebase"; // adjust if needed
+import Card from "../components/card"
 
 export default function BoardPage() {
   const [password, setPassword] = useState("");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cardId, setCardId] = useState<string | null>(null); // this replaces imageUrl
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setImageUrl(null);
+    setCardId(null); // reset any previous card
 
     try {
       const q = query(
@@ -23,13 +24,8 @@ export default function BoardPage() {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        
         const doc = querySnapshot.docs[0];
-        const docId = doc.id;
-
-        const imageRef = ref(storage, `cards/${docId}.png`); // assumes jpg
-        const url = await getDownloadURL(imageRef);
-        setImageUrl(url);
+        setCardId(doc.id); // Send the document ID to <Card />
       } else {
         setError("Fel lösenord. Försök igen.");
       }
@@ -61,8 +57,8 @@ export default function BoardPage() {
 
       {error && <p className="text-red-500">{error}</p>}
 
-      {imageUrl && (
-        <img src={imageUrl} alt="Card" className="max-w-xs rounded shadow-lg" />
+      {cardId && (
+        <Card cardId={cardId} collectionName="Legionen"/> // Use your Card component!
       )}
     </div>
   );
