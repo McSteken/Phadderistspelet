@@ -14,6 +14,8 @@ import { auth } from "../../lib/firebase"; // Import the auth object from fireba
 import { ImSpinner2 } from "react-icons/im"; // Import spinner icon
 import { FaSignInAlt } from "react-icons/fa"; // Import sign in icon
 
+import Navbar from "./components/navbar"; // Import Navbar component
+
 import Card from "./components/card";
 
 export default function Home() {
@@ -56,16 +58,6 @@ export default function Home() {
     )
   }
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      console.log("User signed out successfully.");
-      router.push("/login"); // Redirect to login page after sign out
-    }
-    catch (error) {
-      console.error("Error signing out:", error);
-    }
-  }
 
   const goToLogin = () => {
     router.push("/login");
@@ -74,14 +66,16 @@ export default function Home() {
 
   return(     
     <main>
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+        <Navbar /> {/* Include Navbar component */}
 
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
         {user ? (
 
           <div className="flex flex-col items-center gap-4">
             <h1 className="text-2xl font-bold">Välkommen, {username}.</h1>
-            <button onClick={handleSignOut} className="p-2 bg-red-500 text-white rounded">Logout</button>
             <button onClick={() => router.push("/board")} className="p-2 bg-green-500 text-white rounded">Play</button>
+            <button onClick={() => router.push("/collection")} className="p-2 bg-green-500 text-white rounded">Cards</button>
+
 
           </div>
         ) : (
