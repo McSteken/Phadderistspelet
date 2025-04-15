@@ -24,3 +24,48 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+.playboard {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  transform: perspective(700px) rotateX(30deg); /* Angled effect */
+  width: 60vw;
+  height: 80vh;
+  margin: 0 auto;
+  background-image: url('/images/woodtable.jpg'); /* Replace with your image path */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 10px; /* Optional: rounded corners for the playboard */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3); /* Optional: shadow for depth */
+}
+
+.card-slot {
+  width: 150px;
+  height: 200px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  transition: transform 0.3s ease;
+  position: relative; /* So that content can be positioned on top of the card slots */
+}
+
+.card-slot:hover {
+  transform: scale(1.1); /* Slight zoom effect on hover */
+}
+
+.card {
+  width: 120px;
+  height: 180px;
+  background-color: lightblue;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  position: relative; /* So that it can be adjusted within the slot */
+}
+
