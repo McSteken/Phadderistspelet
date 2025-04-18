@@ -50,15 +50,6 @@ export default function Home() {
     }, [user]); // Run this effect when the user changes
 
 
-  if(loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-        <ImSpinner2 className="animate-spin text-4xl w-17 h-17 " />
-      </div>
-    )
-  }
-
-
   const goToLogin = () => {
     router.push("/login");
   }
@@ -90,8 +81,6 @@ export default function Home() {
 
 
       </div>
-
-    <Card cardId="Legionen" />
 
     </main>
 

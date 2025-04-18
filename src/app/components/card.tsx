@@ -6,10 +6,10 @@ import { getDownloadURL, ref } from "firebase/storage";
 
 type CardProps = {
   cardId: string;
-  collectionName?: string; // allow override (e.g., "Legionen")
+  collectionName: "Legionen" | "Skurkeriet"; // allow override (e.g., "Legionen")
 };
 
-export default function Card({ cardId, collectionName="" }: CardProps) {
+export default function Card({ cardId, collectionName }: CardProps) {
   const [cardText, setCardText] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -24,7 +24,7 @@ export default function Card({ cardId, collectionName="" }: CardProps) {
         const data = docSnap.data();
         setCardText(data.name || cardId);
 
-        const imageRef = ref(storage, `cards/${cardId}.png`);
+        const imageRef = ref(storage, `cards/${collectionName}/${cardId}.png`);
         const url = await getDownloadURL(imageRef);
         setImageUrl(url);
       } else {

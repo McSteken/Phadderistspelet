@@ -41,6 +41,10 @@ body {
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3); /* Optional: shadow for depth */
 }
 
+button {
+  cursor: pointer;
+}
+
 .card-slot {
   width: 150px;
   height: 200px;
