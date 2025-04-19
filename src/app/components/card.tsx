@@ -3,13 +3,16 @@ import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db, storage } from "../../../lib/firebase";
 import { getDownloadURL, ref } from "firebase/storage";
+import { LockClosedIcon } from '@heroicons/react/24/solid';
 
 type CardProps = {
   cardId: string;
-  collectionName: "Legionen" | "Skurkeriet"; // allow override (e.g., "Legionen")
+  collectionName: "Legionen" | "Skurkeriet"; 
+  onClick?: () => void; 
+  locked?: boolean; 
 };
 
-export default function Card({ cardId, collectionName }: CardProps) {
+export default function Card({ cardId, collectionName, onClick, locked }: CardProps) {
   const [cardText, setCardText] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -36,17 +39,22 @@ export default function Card({ cardId, collectionName }: CardProps) {
   }, [cardId, collectionName]);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      {cardText && <p className="text-lg font-medium">{cardText}</p>}
+    <div onClick={onClick} className="flex flex-col items-center hover:scale-105 transition-transform duration-300 ease-in-out shadow-lg rounded-lg mb-4 w-3/4 m-auto mt-4">
+      {cardText && <p className="text-lg font-bold">{cardText}</p>}
 
       {imageUrl && (
-        <div className="relative w-[200px] h-[200px]">
+        <div className="relative w-full aspect-[3/4] mt-1">
           <Image
-            src={imageUrl}
+            src={locked ? "/cards/LTAB.png" : imageUrl}
             alt="Card Image"
             layout="fill"
             objectFit="contain"
           />
+          {locked && (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+            <LockClosedIcon className="w-10 h-10 text-white" />
+          </div>
+          )}
         </div>
       )}
     </div>

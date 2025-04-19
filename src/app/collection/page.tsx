@@ -1,21 +1,127 @@
 "use client"
 
-import React, { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import React, { useEffect, useState, useRef, use } from "react";
+import { collection, getDocs, query, where, doc, updateDoc, getDoc, setDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../../../lib/firebase"; // Import your Firestore instance
 import { useRouter } from 'next/navigation';
 import Card from "../components/card"; // Import the Card component
+import { useAuth } from "../../context/AuthContext";
 import Navbar from "../components/navbar"; // Import the Navbar component
 
 
 export default function Collection() {
-    const router = useRouter();
-
-    const goToHome = () => {
-        router.push('/'); // Navigate to the home page
-    };
     const [cards, setCards] = useState<{ id: string; name?: string; collection: "Legionen" | "Skurkeriet"}[]>([]); // State to hold all cards
-    const [loading, setLoading] = useState(true); // State to manage loading state
+    const [selectedCard, setSelectedCard] = useState<{ id: string, collection: "Legionen" | "Skurkeriet" } | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [cardId, setCardId] = useState<string | null>(null); // this replaces imageUrl
+    const [password, setPassword] = useState("");
+    const [foundCard, setFoundCard] = useState<{ id: string; collection: "Legionen" | "Skurkeriet" } | null>(null); // State to hold found card
+
+    const [showUnlock, setShowUnlock] = useState(false); // State to manage unlock modal visibility
+    const unlockRef = useRef<HTMLDivElement>(null); // Ref to manage unlock modal element
+    const { user } = useAuth(); // Retrieve the authenticated user
+
+
+    const [unlockedCards, setUnlockedCards] = useState<Record<"Legionen" | "Skurkeriet", string[]>>({
+        Legionen: [],
+        Skurkeriet: []
+      });
+
+    useEffect(() => {
+    const fetchUnlocked = async () => {
+        if (!user) {
+            console.error("User is null. Cannot fetch unlocked cards.");
+            return;
+        }
+        const userDocRef = doc(db, "users", user.uid); 
+        const userSnap = await getDoc(userDocRef);
+    
+        if (userSnap.exists()) {
+        const data = userSnap.data();
+        setUnlockedCards(data.unlockedCards || { Legionen: [], Skurkeriet: [] });
+        }
+    };
+    if(user) fetchUnlocked();
+
+}, [user]);
+
+    const handleClickOutside = (event: { target: any; }) => {
+        if (unlockRef.current && !unlockRef.current.contains(event.target)) {
+            setShowUnlock(false); // Close unlock modal if clicked outside
+        }
+    }
+
+    useEffect(() => {
+        document.addEventListener("mousedown", handleClickOutside); // Add event listener to close modal on outside click
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside); // Clean up event listener on unmount
+        }
+    }, []);
+
+
+    const handleFindCard = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setCardId(null); // Reset any previous card
+    
+        try {
+            const collections = ["Legionen", "Skurkeriet"];
+            let found = false;
+        
+            for (const collectionName of collections) {
+              const q = query(
+                collection(db, collectionName),
+                where("password", "==", password)
+              );
+        
+              const querySnapshot = await getDocs(q);
+        
+              if (!querySnapshot.empty) {
+                const doc = querySnapshot.docs[0];
+                setCardId(doc.id);
+                setFoundCard({ id: doc.id, collection: collectionName as "Legionen" | "Skurkeriet" });
+                found = true;
+                break;
+              }
+            }
+        
+            if (!found) {
+              setError("Fel lösenord. Försök igen.");
+            }
+          } catch (err) {
+            console.error("Error unlocking card:", err);
+            setError("Något gick fel. Försök igen.");
+          }    
+        };
+    
+    const handleAddUnlockedCard = async () => {
+        if (!user || !cardId) return;
+    
+        try {
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+    
+            if (userSnap.exists()) {
+                // Update the user's unlocked cards
+                await updateDoc(userRef, {
+                    [`unlockedCards.${selectedCard?.collection}`]: arrayUnion(cardId),
+                });
+            } else {
+                // Create a new user document with the unlocked card
+                await setDoc(userRef, {
+                    unlockedCards: {
+                        Legionen: [cardId],
+                    },
+                });
+            }
+    
+            console.log("Card added to unlockedCards.Legionen");
+            setShowUnlock(false); // Optionally close modal after
+        } catch (error) {
+            console.error("Failed to add card:", error);
+            setError("Något gick fel. Försök igen.");
+        }
+    };
 
     useEffect(() => {
         const fetchCards = async () => {
@@ -46,21 +152,21 @@ export default function Collection() {
                 setCards([...legionenCards, ...skurkerietCards]); // Combine both collections
             } catch (error) {
                 console.error("Error fetching cards:", error);
-            } finally {
-                setLoading(false); // Stop loading
-            }
+            } 
         };
 
         fetchCards();
-    }, []);
+    }, [user]); 
 
     return (
         <main>
             <Navbar />
             <div className="flex min-h-screen">
                 {/* Left-side menu */}
-                <div className="w-1/4 bg-gray-900 text-white p-4">
-                    <h2 className="text-xl font-bold mb-4">Menu</h2>
+                <div className="w-1/5 bg-gray-900 text-white p-4 flex flex-col items-start">
+                    <h1 className="text-2xl font-bold mb-4">Meny</h1>
+                    <button className="mb-4 p-2 bg-green-500 text-white rounded hover:bg-blue-600" onClick={() => setShowUnlock(true)}>Lås upp ett kort</button>
+
                     <ul>
                         <li className="mb-2 hover:text-gray-400 cursor-pointer">Legionen</li>
                         <li className="mb-2 hover:text-gray-400 cursor-pointer">Skurkeriet</li>
@@ -68,16 +174,68 @@ export default function Collection() {
                 </div>
 
                 {/* Main content */}
-                <div className="w-3/4 p-4">
+                <div className="w-3/4 p-4 mx-auto">
                     <h1 className="text-2xl font-bold mb-4">Collection</h1>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                         {cards.map((card) => (
-                            <div key={card.id} className="border p-4 rounded shadow hover:shadow-lg transition flex flex-col items-center">
-                            <Card cardId={card.id} collectionName={card.collection} />
+                            <div key={card.id} className="hover:shadow-lg transition flex flex-col items-center">
+                                <Card   cardId={card.id}
+                                    collectionName={card.collection}
+                                    locked={!unlockedCards[card.collection]?.includes(card.id)} // <- this line is 🔥
+                                    onClick={() => {
+                                        setSelectedCard({ id: card.id, collection: card.collection });
+                                        console.log("Card clicked:", card.id);
+                                    }}
+                                />
                             </div>
                         ))}
                     </div>
                 </div>
+                {showUnlock && (
+                    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }} // 50% transparent black
+>
+                        <div ref={unlockRef} className="bg-white p-6 rounded shadow-lg w-1/3 text-black flex flex-col items-center">
+                            <h1 className="text-4xl font-bold">Lås upp ett kort</h1>
+
+                            <form onSubmit={handleFindCard} className="flex flex-col gap-4">
+                                <input
+                                type="text"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Skriv in lösenordet..."
+                                className="p-2 border border-gray-300 rounded"
+                                />
+                                <button
+                                type="submit"
+                                className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 mb-4"
+                                >
+                                Checka Lösenord
+                                </button>
+                            </form>
+
+                            {error && <p className="text-red-500">{error}</p>}
+
+                            {cardId && (
+                                <>
+                                <div className="flex items-center justify-center w-3/4">
+                                    {foundCard?.collection && (
+                                        <Card cardId={cardId} collectionName={foundCard.collection} />
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={handleAddUnlockedCard}
+                                    className="mt-4 p-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                >
+                                Lägg till i min samling
+                                </button>
+                                </>
+                            )}
+
+                            <button onClick={() => setShowUnlock(false)} className="mt-4 p-2 bg-blue-500 text-white rounded">Close</button>
+                        </div>
+                    </div>  
+                )}
             </div>
         </main>
     );
