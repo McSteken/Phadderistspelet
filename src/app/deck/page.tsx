@@ -7,17 +7,26 @@ import { useAuth } from "../../context/AuthContext";
 import Card from "../components/card";
 import Navbar from "../components/navbar";
 
+// Types
+
 type UnlockedCard = {
   id: string;
   collection: "Legionen" | "Skurkeriet";
 };
 
+type Deck = {
+  id: string;
+  name: string;
+  cards: UnlockedCard[];
+};
+
 export default function UnlockedCollection() {
   const [unlockedCards, setUnlockedCards] = useState<UnlockedCard[]>([]);
   const [selectedCards, setSelectedCards] = useState<UnlockedCard[]>([]);
-  const [deck, setDeck] = useState<UnlockedCard[] | null>(null);
-  const [deckVisible, setDeckVisible] = useState(false);
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
   const [deckMode, setDeckMode] = useState(false);
+  const [newDeckName, setNewDeckName] = useState("");
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -33,9 +42,10 @@ export default function UnlockedCollection() {
 
         const data = userSnap.data();
         const unlocked = data.unlockedCards || {};
-        const cardList: UnlockedCard[] = [];
+        const userDecks = data.decks || [];
 
-        (["Legionen", "Skurkeriet"] as const).forEach((collectionName) => {
+        const cardList: UnlockedCard[] = [];
+        (['Legionen', 'Skurkeriet'] as const).forEach((collectionName) => {
           const ids = unlocked[collectionName] || [];
           ids.forEach((id: string) => {
             cardList.push({ id, collection: collectionName });
@@ -43,7 +53,7 @@ export default function UnlockedCollection() {
         });
 
         setUnlockedCards(cardList);
-        setDeck(data.deck || null);
+        setDecks(userDecks);
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -68,18 +78,22 @@ export default function UnlockedCollection() {
   };
 
   const saveDeck = async () => {
-    if (!user || selectedCards.length === 0 || selectedCards.length > 10) return;
+    if (!user || selectedCards.length === 0 || selectedCards.length > 10 || !newDeckName.trim()) return;
 
     const userRef = doc(db, "users", user.uid);
+    const newDeck: Deck = {
+      id: crypto.randomUUID(),
+      name: newDeckName,
+      cards: selectedCards,
+    };
 
     try {
-      await updateDoc(userRef, {
-        deck: selectedCards,
-      });
-
-      alert("Ditt deck har sparats!");
-      setDeck(selectedCards);
+      const updatedDecks = [...decks, newDeck];
+      await updateDoc(userRef, { decks: updatedDecks });
+      setDecks(updatedDecks);
+      alert("Ditt deck har sparats!"); //Kan byta från alert kanske? venne
       setSelectedCards([]);
+      setNewDeckName("");
       setDeckMode(false);
     } catch (error) {
       console.error("Failed to save deck:", error);
@@ -87,13 +101,32 @@ export default function UnlockedCollection() {
     }
   };
 
+  const selectedDeck = decks.find((d) => d.id === activeDeckId);
+
   if (loading) {
     return (
       <main className="flex items-center justify-center min-h-screen bg-gray-100">
-        <p className="text-xl text-gray-600">Laddar din samling...</p>
+        <p className="text-xl text-gray-600">Laddar</p>
       </main>
     );
   }
+
+  const deleteActiveDeck = async () => {
+    if (!user || !activeDeckId) return;
+  
+    const userRef = doc(db, "users", user.uid);
+    const updatedDecks = decks.filter((d) => d.id !== activeDeckId);
+  
+    try {
+      await updateDoc(userRef, { decks: updatedDecks });
+      setDecks(updatedDecks);
+      setActiveDeckId(null);
+      alert("Decket har raderats."); 
+    } catch (error) {
+      console.error("Fel vid radering av deck:", error);
+      alert("Något gick fel vid radering.");
+    }
+  };
 
   return (
     <main>
@@ -103,28 +136,24 @@ export default function UnlockedCollection() {
           <h1 className="text-3xl font-bold">Min Samling</h1>
           <div className="flex gap-4">
             {!deckMode ? (
-              <>
-                <button
-                  onClick={() => setDeckMode(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                >
-                  Skapa Deck
-                </button>
-
-                {deck && (
-                  <button
-                    onClick={() => setDeckVisible(!deckVisible)}
-                    className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-                  >
-                    {deckVisible ? "Dölj mitt deck" : "Visa mitt deck"}
-                  </button>
-                )}
-              </>
+              <button
+                onClick={() => setDeckMode(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Skapa Deck
+              </button>
             ) : (
               <>
+                <input
+                  type="text"
+                  placeholder="Namn på deck"
+                  value={newDeckName}
+                  onChange={(e) => setNewDeckName(e.target.value)}
+                  className="px-3 py-2 border rounded"
+                />
                 <button
                   onClick={saveDeck}
-                  disabled={selectedCards.length === 0}
+                  disabled={selectedCards.length === 0 || !newDeckName.trim()}
                   className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
                 >
                   Spara Deck ({selectedCards.length}/10)
@@ -133,6 +162,7 @@ export default function UnlockedCollection() {
                   onClick={() => {
                     setDeckMode(false);
                     setSelectedCards([]);
+                    setNewDeckName("");
                   }}
                   className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
                 >
@@ -143,19 +173,39 @@ export default function UnlockedCollection() {
           </div>
         </div>
 
-        {deckVisible && deck && (
+        {decks.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">Mitt Deck</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {deck.map((card) => (
-                <Card
-                  key={card.id}
-                  cardId={card.id}
-                  collectionName={card.collection}
-                  locked={false}
-                />
+            <h2 className="text-2xl font-semibold mb-4">Mina Decks</h2>
+            <div className="flex flex-wrap gap-4">
+              {decks.map((deck) => (
+                <button
+                  key={deck.id}
+                  onClick={() => setActiveDeckId(deck.id)}
+                  className={`px-4 py-2 rounded text-white ${deck.id === activeDeckId ? 'bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'}`}
+                >
+                  {deck.name}
+                </button>
               ))}
             </div>
+
+            {selectedDeck && (
+              <div className="mt-4">
+                <button onClick={deleteActiveDeck}className="mb-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                  Radera Deck 
+                </button>
+                <h3 className="text-xl font-semibold mb-2">{selectedDeck.name}</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {selectedDeck.cards.map((card) => (
+                    <Card
+                      key={card.id}
+                      cardId={card.id}
+                      collectionName={card.collection}
+                      locked={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
