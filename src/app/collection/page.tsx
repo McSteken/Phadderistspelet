@@ -104,7 +104,7 @@ export default function Collection() {
             if (userSnap.exists()) {
                 // Update the user's unlocked cards
                 await updateDoc(userRef, {
-                    [`unlockedCards.${selectedCard?.collection}`]: arrayUnion(cardId),
+                    [`unlockedCards.${foundCard?.collection}`]: arrayUnion(cardId),
                 });
             } else {
                 // Create a new user document with the unlocked card
@@ -113,9 +113,13 @@ export default function Collection() {
                         Legionen: [cardId],
                     },
                 });
-            }
+            }    
+            // update unlocked cards
+            setUnlockedCards((prev) => ({
+                ...prev,
+                [foundCard?.collection as "Legionen" | "Skurkeriet"]: [...prev[foundCard?.collection as "Legionen" | "Skurkeriet"], cardId],
+            }));
     
-            console.log("Card added to unlockedCards.Legionen");
             setShowUnlock(false); // Optionally close modal after
         } catch (error) {
             console.error("Failed to add card:", error);
