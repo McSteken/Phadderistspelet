@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Card from "../components/card"; // Import the Card component
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../components/navbar"; // Import the Navbar component
+import CustomButton from "../components/customButton";
 
 
 export default function Collection() {
@@ -21,6 +22,7 @@ export default function Collection() {
     const unlockRef = useRef<HTMLDivElement>(null); // Ref to manage unlock modal element
     const { user } = useAuth(); // Retrieve the authenticated user
 
+    const router = useRouter(); // Use Next.js router for navigation
 
     const [unlockedCards, setUnlockedCards] = useState<Record<"Legionen" | "Skurkeriet", string[]>>({
         Legionen: [],
@@ -168,7 +170,7 @@ export default function Collection() {
             <div className="flex min-h-screen">
                 {/* Left-side menu */}
                 <div className="w-1/5 bg-gray-900 text-white p-4 flex flex-col items-start">
-                    <h1 className="text-2xl font-bold mb-4">Meny</h1>
+                    <h1 className="text-2xl font-bold py-2">Meny</h1>
                     <button className="mb-4 p-2 bg-green-500 text-white rounded hover:bg-blue-600" onClick={() => setShowUnlock(true)}>Lås upp ett kort</button>
 
                     <ul>
@@ -178,18 +180,29 @@ export default function Collection() {
                 </div>
 
                 {/* Main content */}
-                <div className="w-3/4 p-4 mx-auto">
-                    <h1 className="text-2xl font-bold mb-4">Collection</h1>
+                <div className="w-3/4 p-4 mx-auto flex flex-col">
+                    <h1 className="text-2xl font-bold mb-4 p-8">Collection</h1>
+                    {/* Buttons */}
+                    <div className="flex justify-center mb-4 gap-2 pb-10">
+                        <CustomButton variant="secondary" >Alla kort</CustomButton>
+                        <CustomButton variant="secondary" onClick={() => router.push("/deck")} >Decks</CustomButton>
+                    </div>
                     <div className="grid grid-cols-4 gap-4">
                         {cards.map((card) => (
-                            <div key={card.id} className="hover:shadow-lg transition flex flex-col items-center">
-                                <Card   cardId={card.id}
+                            <div
+                                key={card.id}
+                                className={`transition flex flex-col items-center `}
+                            >
+                                <h2 className="text-lg font-bold">{card.name}</h2>
+                                <Card   
+                                    cardId={card.id}
                                     collectionName={card.collection}
-                                    locked={!unlockedCards[card.collection]?.includes(card.id)} // <- this line is 🔥
+                                    locked={!unlockedCards[card.collection]?.includes(card.id)} 
                                     onClick={() => {
                                         setSelectedCard({ id: card.id, collection: card.collection });
                                         console.log("Card clicked:", card.id);
                                     }}
+                                    shadow={true} 
                                 />
                             </div>
                         ))}
@@ -199,7 +212,7 @@ export default function Collection() {
                     <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }} // 50% transparent black
 >
                         <div ref={unlockRef} className="bg-white p-6 rounded shadow-lg w-1/3 text-black flex flex-col items-center">
-                            <h1 className="text-4xl font-bold">Lås upp ett kort</h1>
+                            <h1 className="font-bold">Lås upp ett kort</h1>
 
                             <form onSubmit={handleFindCard} className="flex flex-col gap-4">
                                 <input

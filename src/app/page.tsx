@@ -15,7 +15,7 @@ import { ImSpinner2 } from "react-icons/im"; // Import spinner icon
 import { FaSignInAlt } from "react-icons/fa"; // Import sign in icon
 
 import Navbar from "./components/navbar"; // Import Navbar component
-
+import CustomButton from "./components/customButton";
 import Card from "./components/card";
 
 export default function Home() {
@@ -56,34 +56,30 @@ export default function Home() {
 
 
   return(     
-    <main>
-        <Navbar /> {/* Include Navbar component */}
+    <main >
+      <Navbar /> {/* Include Navbar component */}
 
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <div className="flex flex-col items-center mt-48 h-full px-8 pt-20 ">
         {user ? (
+          <>
+            <h1 className="text-2xl font-bold text-center">
+              Välkommen, {username}.
+            </h1>
 
-          <div className="flex flex-col items-center gap-4">
-            <h1 className="text-2xl font-bold">Välkommen, {username}.</h1>
-            <button onClick={() => router.push("/play")} className="p-2 bg-green-500 text-white rounded">Play</button>
-            <button onClick={() => router.push("/deck")} className="p-2 bg-green-500 text-white rounded">Deck</button>
-            <button onClick={() => router.push("/collection")} className="p-2 bg-green-500 text-white rounded">Cards</button>
-
-
-          </div>
+            {/* Button row is absolutely positioned near the bottom */}
+            <div className="flex items-center absolute bottom-36 flex gap-2">
+              <CustomButton variant="secondary" onClick={() => router.push("/deck")} >Deck</CustomButton>
+              <CustomButton size="xlarge" onClick={() => router.push("/play")} >Play</CustomButton>
+              <CustomButton variant="secondary" onClick={() => router.push("/collection")} >Cards</CustomButton>
+            </div>
+          </>
         ) : (
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-4 justify-center h-full">
             <h1 className="text-2xl font-bold">Vänligen logga in</h1>
             <button onClick={goToLogin} className="p-2 bg-blue-500 text-white rounded">Login</button>
           </div>
         )}
-
-
-
-
       </div>
-
     </main>
-
-
   )
 }

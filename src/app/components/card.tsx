@@ -10,9 +10,11 @@ type CardProps = {
   collectionName: "Legionen" | "Skurkeriet"; 
   onClick?: () => void; 
   locked?: boolean; 
+  showText?: boolean;
+  shadow?: boolean;
 };
 
-export default function Card({ cardId, collectionName, onClick, locked }: CardProps) {
+export default function Card({ cardId, collectionName, onClick, locked, showText = false, shadow = false }: CardProps) {
   const [cardText, setCardText] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -40,10 +42,19 @@ export default function Card({ cardId, collectionName, onClick, locked }: CardPr
 
   return (
     <div onClick={onClick} className="flex flex-col items-center hover:scale-105 transition-transform duration-300 ease-in-out shadow-lg rounded-lg mb-4 w-3/4 m-auto mt-4">
-      {cardText && <p className="text-lg font-bold">{cardText}</p>}
+      {cardText && showText && <p className="text-lg font-bold">{cardText}</p>}
 
       {imageUrl && (
-        <div className="relative w-full aspect-[3/4] mt-1">
+        <div         
+          className={`relative w-full h-70 mt-1 transition hover:shadow-xl ${
+            !locked && shadow && collectionName === "Legionen"
+            ? "hover:shadow-red-500"
+            : !locked && shadow && collectionName === "Skurkeriet"
+            ? "hover:shadow-yellow-500"
+            : ""
+          } `
+          }
+        >
           <Image
             src={locked ? "/cards/LTAB.png" : imageUrl}
             alt="Card Image"

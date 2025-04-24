@@ -52,12 +52,12 @@ export default function Navbar() {
 
 
   return (
-  <div>
+  <div className='absolute top-0 left-0 w-full z-10'>
 
     <nav className="flex items-center justify-between p-4 bg-gray-800 text-white">
         <div className="text-lg font-bold"></div>
       
-        <div className="flex space-x-4">
+        <div className="flex space-x-10">
                     <a href="/" className="hover:text-gray-400 flex items-center">Hem</a>
                     <a href="/collection" className="hover:text-gray-400 flex items-center">Collection</a>
                     <a href="/about" className="hover:text-gray-400 flex items-center">Regler</a>
