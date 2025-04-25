@@ -8,6 +8,7 @@ import Card from "../components/card"; // Import the Card component
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../components/navbar"; // Import the Navbar component
 import CustomButton from "../components/customButton";
+import Icon from "./icon"
 
 
 export default function Collection() {
@@ -23,6 +24,7 @@ export default function Collection() {
     const { user } = useAuth(); // Retrieve the authenticated user
 
     const router = useRouter(); // Use Next.js router for navigation
+    const phadderier = ["Legionen", "Skurkeriet", "Familjen", "Kretsn", "NPhadderiet"] as const; // Define the phadderier collections
 
     const [unlockedCards, setUnlockedCards] = useState<Record<"Legionen" | "Skurkeriet", string[]>>({
         Legionen: [],
@@ -169,14 +171,22 @@ export default function Collection() {
             <Navbar />
             <div className="flex min-h-screen">
                 {/* Left-side menu */}
-                <div className="w-1/5 bg-gray-900 text-white p-4 flex flex-col items-start">
+                <div className="w-1/5 bg-gray-900 text-white p-4 flex flex-col items-center">
                     <h1 className="text-2xl font-bold py-2">Meny</h1>
                     <button className="mb-4 p-2 bg-green-500 text-white rounded hover:bg-blue-600" onClick={() => setShowUnlock(true)}>Lås upp ett kort</button>
 
-                    <ul>
-                        <li className="mb-2 hover:text-gray-400 cursor-pointer">Legionen</li>
-                        <li className="mb-2 hover:text-gray-400 cursor-pointer">Skurkeriet</li>
-                    </ul>
+                    <div className="flex flex-col gap-2 bg-gray-800 p-4 rounded-lg w-full items-center justify-center">
+                        <h2 className="text-lg font-bold self-center mb-4">Phadderier</h2>
+                        
+                        <div className="flex flex-wrap justify-center gap-4 mb-4 max-w-full">
+                            {(phadderier).map((collectionName) => (
+                                <div key={collectionName} className="w-[calc(50%-0.5rem)] max-w-[200px] aspect-square flex justify-center items-center"> {/*calc(50%-0.5rem) to make it responsive*/}
+                                    <Icon collectionName={collectionName} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                 </div>
 
                 {/* Main content */}
