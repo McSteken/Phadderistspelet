@@ -2,12 +2,14 @@
 
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../../lib/firebase"; 
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function Play() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [gameName, setGameName] = useState<string>("");
 
   const startGame = async () => {
     if (loading) {
@@ -18,17 +20,28 @@ export default function Play() {
       return alert("Du måste vara inloggad!");
     }
 
+    if (!gameName.trim()) {
+      return alert("Ge ditt spel ett namn!");
+    }
+    const profileSnap = await getDoc(doc(db, "users", user.uid));
+    const profile = profileSnap.exists() ? profileSnap.data() : {};
+    const username = (profile as any).username || "Spelare 1";
+
+
     try {
       const gameRef = await addDoc(collection(db, "games"), {
+        name: gameName,
         player1: user.uid,
+        player1Name: username,
         player2: null,
+        player2Name: null,
         player1Move: null,
         player2Move: null,
         status: "waiting",
         createdAt: serverTimestamp(),
       });
 
-      router.push(`/game`);
+      router.push(`/game/${gameRef.id}`);
     } catch (err) {
       console.error("Något gick fel vid skapandet av spelet:", err);
       alert("Kunde inte skapa spelet, försök igen.");
@@ -37,6 +50,14 @@ export default function Play() {
 
   return (
     <div className="p-4">
+      <input
+        type="text"
+        placeholder="Spelets namn"
+        value={gameName}
+        onChange={e => setGameName(e.target.value)}
+        className="w-full mb-4 p-2 border rounded"
+     />
+
       <button
         onClick={startGame}
         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"

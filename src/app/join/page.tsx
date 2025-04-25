@@ -45,10 +45,11 @@ export default function JoinGame() {
       const gameRef = doc(db, "games", gameId);
       await updateDoc(gameRef, {
         player2: user.uid,
+        player2Name: user.displayName || "Spelare 2",
         status: "in_progress", // Update the game status once two players have joined
       });
 
-      router.push(`/game/`); // Navigate to the game page
+      router.push(`/game/${gameId}`); // Navigate to the game page
     } catch (err) {
       console.error("Failed to join the game:", err);
       alert("Kunde inte gå med i spelet, försök igen.");
@@ -64,7 +65,7 @@ export default function JoinGame() {
         <ul>
           {games.map((game) => (
             <li key={game.id} className="mb-4">
-              <p>Spel {game.id}</p>
+              <h2>Match: {game.name}</h2>
               <button
                 onClick={() => joinGame(game.id)}
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
