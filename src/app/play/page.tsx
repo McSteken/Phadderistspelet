@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
+import CustomButton from "../components/customButton";
 
 type Deck = {
   id: string;
@@ -79,6 +80,7 @@ export default function PlayMenu() {
       >
         Play
       </button>
+      <CustomButton variant="primary" onClick={() => router.push("/join")} >Join</CustomButton>
     </div>
   );
 }
