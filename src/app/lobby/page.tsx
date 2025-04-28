@@ -29,6 +29,8 @@ export default function Play() {
     const profileSnap = await getDoc(doc(db, "users", user.uid));
     const profile = profileSnap.exists() ? profileSnap.data() : {};
     const username = (profile as any).username || "Spelare 1";
+    const decksList = (profile as any). decks || "";
+    
 
 
     try {
@@ -61,7 +63,7 @@ export default function Play() {
         onChange={e => setGameName(e.target.value)}
         className="w-full mb-4 p-2 border rounded"
      />
-
+      
       <button
         onClick={startGame}
         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
