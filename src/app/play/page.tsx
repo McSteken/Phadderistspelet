@@ -44,7 +44,7 @@ export default function PlayMenu() {
 
   const handlePlay = () => {
     if (!selectedDeckId) return;
-    router.push(`/board?deckId=${selectedDeckId}`);
+    router.push(`/lobby?deckId=${selectedDeckId}`);
   };
 
   return (

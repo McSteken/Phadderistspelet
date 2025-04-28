@@ -5,11 +5,14 @@ import { db } from "../../../lib/firebase";
 import { collection, addDoc, serverTimestamp, getDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function Play() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [gameName, setGameName] = useState<string>("");
+  const searchParams = useSearchParams();
+  const deckId = searchParams.get("deckId");
 
   const startGame = async () => {
     if (loading) {
@@ -33,6 +36,7 @@ export default function Play() {
         name: gameName,
         player1: user.uid,
         player1Name: username,
+        player1Deck: deckId,
         player2: null,
         player2Name: null,
         player1Move: null,

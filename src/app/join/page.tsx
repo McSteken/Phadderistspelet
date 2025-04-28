@@ -3,7 +3,7 @@
 
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../../lib/firebase"; 
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -41,11 +41,15 @@ export default function JoinGame() {
       return;
     }
 
+    const profileSnap = await getDoc(doc(db, "users", user.uid));
+    const profile = profileSnap.exists() ? profileSnap.data() : {};
+    const username = (profile as any).username || "Spelare 2";
+  
     try {
       const gameRef = doc(db, "games", gameId);
       await updateDoc(gameRef, {
         player2: user.uid,
-        player2Name: user.displayName || "Spelare 2",
+        player2Name: username || "Spelare 2",
         status: "in_progress", // Update the game status once two players have joined
       });
 
