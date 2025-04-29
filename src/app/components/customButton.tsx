@@ -3,7 +3,7 @@
 import React from "react";
 
 interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: "primary" | "secondary" | "tertiary";
+    variant?: "primary" | "secondary" | "tertiary" | "nav";
     size?: "small" | "medium" | "large" | "xlarge";
     shape?: "rectangle" | "square";
     children: React.ReactNode;
@@ -15,6 +15,7 @@ const variantStyles = {
     primary: "bg-green-500 text-white hover:bg-green-800",
     secondary: "bg-blue-500 text-white hover:bg-blue-800",
     tertiary: "bg-transparent text-blue-500 border border-blue-500 hover:bg-blue-500 hover:text-white",
+    nav: "bg-gray-800 text-white hover:text-gray-400",
 };
 
 const sizeStyles = {

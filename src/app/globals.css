@@ -77,13 +77,28 @@ button {
 }
 
 .card {
-  width: 120px;
-  height: 180px;
+  width: 120px; 
+  height: 180px; /*180*/
   background-color: lightblue;
   display: flex;
   justify-content: center;
   align-items: center;
   border-radius: 8px;
   position: relative; /* So that it can be adjusted within the slot */
+  overflow: hidden;
+}
+.text-shadow-lg {
+  text-shadow: 3px 3px 5px rgba(0, 0, 0, 1);
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
+.shimmer-text {
+  background: linear-gradient(to right, #ffffff 10%, #e2e2e2 50%, #ffffff 90%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}

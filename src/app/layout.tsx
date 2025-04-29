@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Aladin, Road_Rage, EB_Garamond, Montserrat } from "next/font/google";
+import { Geist, Geist_Mono, Aladin, Road_Rage, EB_Garamond, Montserrat, Cinzel } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext"; // Use authprovider to wrap the app (for all pages)
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+});
+
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: "500", 
 });
 
 const geistMono = Geist_Mono({

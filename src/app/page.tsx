@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, } from "firebase/firestore";
 import { db, storage } from "../../lib/firebase";
 import { getDownloadURL, ref } from "firebase/storage"; // Import necessary Firebase Storage functions
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { collection, getDocs } from "firebase/firestore";
+
 
 import { useAuth } from "../context/AuthContext";
 import { signOut } from "firebase/auth";
@@ -49,6 +52,26 @@ export default function Home() {
       fetchUsername();
     }, [user]); // Run this effect when the user changes
 
+    const [backgroundCards, setBackgroundCards] = useState<{ id: string, collection: "Legionen" | "Skurkeriet" }[]>([]);
+
+    // Fetch a few cards for background
+    useEffect(() => {
+      const fetchRandomCards = async () => {
+        const col1 = await getDocs(collection(db, "Legionen"));
+        const col2 = await getDocs(collection(db, "Skurkeriet"));
+
+        const allCards = [
+          ...col1.docs.map(doc => ({ id: doc.id, collection: "Legionen" as const })),
+          ...col2.docs.map(doc => ({ id: doc.id, collection: "Skurkeriet" as const })),
+        ];
+
+        // Shuffle and take first 5
+        const shuffled = allCards.sort(() => 0.5 - Math.random()).slice(0, 20);
+        setBackgroundCards(shuffled);
+      };
+
+      fetchRandomCards();
+    }, []);
 
   const goToLogin = () => {
     router.push("/login");
@@ -56,21 +79,57 @@ export default function Home() {
 
 
   return(     
-    <main >
+    <main className="bg-gradient-to-r from-gray-800 to-gray-200" >
       <Navbar /> {/* Include Navbar component */}
-
-      <div className="flex flex-col items-center mt-48 h-full px-8 pt-20 ">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        {backgroundCards.map((card, index) => (
+          <motion.div
+            key={card.id}
+            className="absolute w-50"
+            initial={{
+              x: Math.random() * window.innerWidth,
+              y: Math.random() * window.innerHeight* 0.9,
+              rotate: Math.random() * 360,
+            }}
+            animate={{
+              x: Math.random() * window.innerWidth,
+              y: Math.random() * window.innerHeight*0.9,
+              rotate: Math.random() * 360,
+            }}
+            transition={{
+              duration: 20 + Math.random() * 10,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "linear",
+            }}
+          >
+            <Card
+              cardId={card.id}
+              collectionName={card.collection}
+              showText={false}
+              shadow={false}
+              locked={false}
+            />
+          </motion.div>
+        ))}
+      </div>
+      <div className="relative z-10 h-screen flex flex-col items-center justify-center px-8 text-center">
+      <h1 className="text-4xl font-extrabold mb-6 font-[Cinzel] text-white text-shadow-lg">
+        Phadderistspelet
+      </h1>
         {user ? (
           <>
-            <h1 className="text-2xl font-bold text-center">
-              Välkommen, {username}.
+            <h1 className="text-xs font-extrabold mb-6 font-[Cinzel] text-white text-shadow-lg"
+            style={{ fontSize: "26px" }}
+            >
+              Nämen Heeej {username}.
             </h1>
 
-            {/* Button row is absolutely positioned near the bottom */}
-            <div className="flex items-center absolute bottom-36 flex gap-2">
-              <CustomButton variant="secondary" onClick={() => router.push("/deck")} >Deck</CustomButton>
-              <CustomButton size="xlarge" onClick={() => router.push("/play")} >Play</CustomButton>
-              <CustomButton variant="secondary" onClick={() => router.push("/collection")} >Cards</CustomButton>
+            {/* Buttons stacked under text */}
+            <div className="flex flex-col md:flex-row gap-4">
+              <CustomButton variant="nav" onClick={() => router.push("/deck")}>Deck</CustomButton>
+              <CustomButton variant = "nav"size="xlarge" onClick={() => router.push("/play")}>Play</CustomButton>
+              <CustomButton variant="nav" onClick={() => router.push("/collection")}>Cards</CustomButton>
             </div>
           </>
         ) : (

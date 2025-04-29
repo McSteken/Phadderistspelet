@@ -4,6 +4,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { db, storage } from "../../../lib/firebase";
 import { getDownloadURL, ref } from "firebase/storage";
 import { LockClosedIcon } from '@heroicons/react/24/solid';
+import { motion } from "framer-motion";
+
 
 type CardProps = {
   cardId: string;
