@@ -5,7 +5,9 @@ import { auth } from "../../lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 
 
-const AuthContext = createContext<{ user: User | null; loading: boolean }>({
+const AuthContext = createContext<{
+  [x: string]: any; user: User | null; loading: boolean 
+}>({
     user: null,
     loading: true,
 })

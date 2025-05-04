@@ -8,7 +8,6 @@ import Card from "../components/card";
 import Navbar from "../components/navbar";
 
 // Types
-
 type UnlockedCard = {
   id: string;
   collection: "Legionen" | "Skurkeriet";
@@ -30,6 +29,18 @@ export default function UnlockedCollection() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
+  // Set active deck
+  const setActiveDeck = async (deckId: string) => {
+    if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    try {
+      await updateDoc(userRef, { activeDeckId: deckId });
+      setActiveDeckId(deckId);
+    } catch (error) {
+      console.error("Failed to set active deck:", error);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
@@ -43,6 +54,7 @@ export default function UnlockedCollection() {
         const data = userSnap.data();
         const unlocked = data.unlockedCards || {};
         const userDecks = data.decks || [];
+        const storedActiveDeckId = data.activeDeckId || null;
 
         const cardList: UnlockedCard[] = [];
         (['Legionen', 'Skurkeriet'] as const).forEach((collectionName) => {
@@ -54,6 +66,13 @@ export default function UnlockedCollection() {
 
         setUnlockedCards(cardList);
         setDecks(userDecks);
+
+        if (storedActiveDeckId) {
+          setActiveDeckId(storedActiveDeckId);
+        } else if (userDecks.length > 0) {
+          setActiveDeck(userDecks[0].id); // set first deck as default
+        }
+
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -91,13 +110,37 @@ export default function UnlockedCollection() {
       const updatedDecks = [...decks, newDeck];
       await updateDoc(userRef, { decks: updatedDecks });
       setDecks(updatedDecks);
-      alert("Ditt deck har sparats!"); //Kan byta från alert kanske? venne
       setSelectedCards([]);
       setNewDeckName("");
       setDeckMode(false);
+      alert("Ditt deck har sparats!");
     } catch (error) {
       console.error("Failed to save deck:", error);
       alert("Något gick fel när decket skulle sparas.");
+    }
+  };
+
+  const deleteActiveDeck = async () => {
+    if (!user || !activeDeckId) return;
+
+    const userRef = doc(db, "users", user.uid);
+    const updatedDecks = decks.filter((d) => d.id !== activeDeckId);
+
+    try {
+      await updateDoc(userRef, {
+        decks: updatedDecks,
+        activeDeckId: updatedDecks.length > 0 ? updatedDecks[0].id : null,
+      });
+      setDecks(updatedDecks);
+      if (updatedDecks.length > 0) {
+        setActiveDeckId(updatedDecks[0].id);
+      } else {
+        setActiveDeckId(null);
+      }
+      alert("Decket har raderats.");
+    } catch (error) {
+      console.error("Fel vid radering av deck:", error);
+      alert("Något gick fel vid radering.");
     }
   };
 
@@ -110,23 +153,6 @@ export default function UnlockedCollection() {
       </main>
     );
   }
-
-  const deleteActiveDeck = async () => {
-    if (!user || !activeDeckId) return;
-  
-    const userRef = doc(db, "users", user.uid);
-    const updatedDecks = decks.filter((d) => d.id !== activeDeckId);
-  
-    try {
-      await updateDoc(userRef, { decks: updatedDecks });
-      setDecks(updatedDecks);
-      setActiveDeckId(null);
-      alert("Decket har raderats."); 
-    } catch (error) {
-      console.error("Fel vid radering av deck:", error);
-      alert("Något gick fel vid radering.");
-    }
-  };
 
   return (
     <main>
@@ -180,8 +206,12 @@ export default function UnlockedCollection() {
               {decks.map((deck) => (
                 <button
                   key={deck.id}
-                  onClick={() => setActiveDeckId(deck.id)}
-                  className={`px-4 py-2 rounded text-white ${deck.id === activeDeckId ? 'bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'}`}
+                  onClick={() => {setActiveDeck(deck.id); }}
+                  className={`px-4 py-2 rounded text-white ${
+                    deck.id === activeDeckId
+                      ? "bg-purple-700"
+                      : "bg-purple-500 hover:bg-purple-600"
+                  }`}
                 >
                   {deck.name}
                 </button>
@@ -190,8 +220,11 @@ export default function UnlockedCollection() {
 
             {selectedDeck && (
               <div className="mt-4">
-                <button onClick={deleteActiveDeck}className="mb-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                  Radera Deck 
+                <button
+                  onClick={deleteActiveDeck}
+                  className="mb-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                >
+                  Radera Deck
                 </button>
                 <h3 className="text-xl font-semibold mb-2">{selectedDeck.name}</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -216,13 +249,17 @@ export default function UnlockedCollection() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {unlockedCards.map((card) => {
-              const isSelected = selectedCards.some((c) => c.id === card.id && c.collection === card.collection);
+              const isSelected = selectedCards.some(
+                (c) => c.id === card.id && c.collection === card.collection
+              );
 
               return (
                 <div
                   key={card.id}
                   onClick={() => toggleCardSelection(card)}
-                  className={`relative cursor-pointer ${deckMode && "hover:scale-105 transition-transform"}`}
+                  className={`relative cursor-pointer ${
+                    deckMode && "hover:scale-105 transition-transform"
+                  }`}
                 >
                   <Card
                     cardId={card.id}

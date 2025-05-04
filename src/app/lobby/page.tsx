@@ -38,14 +38,17 @@ export default function Play() {
         name: gameName,
         player1: user.uid,
         player1Name: username,
-        player1Deck: deckId,
+        player1Deck: null, // Don't assign here, let them select
         player2: null,
         player2Name: null,
+        player2Deck: null,
         player1Move: null,
         player2Move: null,
+        decks: decksList, // 👈 Add all user's decks here
         status: "waiting",
         createdAt: serverTimestamp(),
       });
+      
 
       router.push(`/game/${gameRef.id}`);
     } catch (err) {
