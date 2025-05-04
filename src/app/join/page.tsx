@@ -50,7 +50,7 @@ export default function JoinGame() {
       await updateDoc(gameRef, {
         player2: user.uid,
         player2Name: username || "Spelare 2",
-        status: "in_progress", // Update the game status once two players have joined
+        //status: "in_progress", // Update the game status once two players have joined
       });
 
       router.push(`/game/${gameId}`); // Navigate to the game page

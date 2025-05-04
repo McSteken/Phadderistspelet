@@ -129,7 +129,7 @@ export default function GamePage() {
   };
 
   const startGame = async () => {
-    if (!gameId) return;
+    if (!gameId || !player1DeckSelected || !player2DeckSelected) return;
 
     try {
       const gameRef = doc(db, "games", gameId);
@@ -139,6 +139,7 @@ export default function GamePage() {
     }
   };
 
+  // Check if both players have selected their decks
   const isGameReady = player1DeckSelected && player2DeckSelected;
 
   return (
@@ -178,7 +179,7 @@ export default function GamePage() {
         )}
 
         {/* Start Game button */}
-        {isGameReady && (
+        {game.status === "waiting" && isGameReady && (
           <button
             onClick={startGame}
             className="mt-6 px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700"
