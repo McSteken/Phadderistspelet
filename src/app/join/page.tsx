@@ -50,7 +50,8 @@ export default function JoinGame() {
       await updateDoc(gameRef, {
         player2: user.uid,
         player2Name: username || "Spelare 2",
-        //status: "in_progress", // Update the game status once two players have joined
+        player2Deck: null, // Player2 Deck is initially null
+        status: "waiting", // Keep the game status as waiting if Player 2 hasn't selected a deck
       });
 
       router.push(`/game/${gameId}`); // Navigate to the game page

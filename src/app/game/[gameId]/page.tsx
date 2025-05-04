@@ -26,10 +26,11 @@ export default function GamePage() {
   const [hand, setHand] = useState<UnlockedCard[]>([]);
   const [player1DeckSelected, setPlayer1DeckSelected] = useState(false);
   const [player2DeckSelected, setPlayer2DeckSelected] = useState(false);
+  const [availableDecks, setAvailableDecks] = useState<Deck[]>([]);
   const router = useRouter();
   const rawParams = useParams();
   const gameId = Array.isArray(rawParams?.gameId) ? rawParams.gameId[0] : rawParams?.gameId;
-  const { user } = useAuth(); // Make sure user is retrieved from context
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!gameId || !user) return;
@@ -40,6 +41,8 @@ export default function GamePage() {
         const profileSnap = await getDoc(doc(db, "users", user.uid));
         const profile = profileSnap.exists() ? profileSnap.data() : {};
         const decksList = (profile as any).decks || [];
+
+        console.log("User's Decks:", decksList); // Log decks
 
         // Fetch the game data
         const matchRef = doc(db, "games", gameId as string);
@@ -52,6 +55,17 @@ export default function GamePage() {
 
           const gameData = snapshot.data();
           setGame(gameData);
+          console.log("Player 1 ID:", gameData?.player1);
+          console.log("Player 2 ID:", gameData?.player2);
+          console.log("Current User ID:", user?.uid);
+
+          // Filter available decks based on the current user's ID
+          if (gameData?.player1 === user.uid) {
+            setAvailableDecks(decksList);
+          }
+          if (gameData?.player2 === user.uid) {
+            setAvailableDecks(decksList);
+          }
 
           // Check if the user has selected a deck
           const player1HasDeck = gameData?.player1Deck;
@@ -63,22 +77,6 @@ export default function GamePage() {
 
           if (gameData.player2 === user.uid && player2HasDeck) {
             setPlayer2DeckSelected(true);
-          }
-
-          // Fetch the active deck from user's decks (for hand)
-          let availableDecks = [];
-
-          // Only show the current player's decks
-          if (gameData.player1 === user.uid) {
-            availableDecks = decksList; // Show Player 1's decks
-          } else if (gameData.player2 === user.uid) {
-            availableDecks = decksList; // Show Player 2's decks
-          }
-
-          // Filter decks based on user selection
-          const activeDeck = availableDecks.find((deck: Deck) => deck.id === gameData?.player1Deck || gameData?.player2Deck);
-          if (activeDeck) {
-            setHand(activeDeck.cards); // Set the user's hand based on the deck cards
           }
 
           setLoading(false);
@@ -160,35 +158,20 @@ export default function GamePage() {
         <p>Vänta på att den andra spelaren går med…</p>
       )}
 
-      <div className="flex flex-col items-center justify-between min-h-screen">
-        {/* Deck selection */}
-        {game.status === "waiting" && !player1DeckSelected && !player2DeckSelected && (
-          <div>
-            <h3 className="text-lg mb-4">Välj ett deck</h3>
-            <div className="flex flex-col gap-4">
-              {game.decks.map((deck: Deck) => (
-                <button
-                  key={deck.id}
-                  onClick={() => handleDeckSelection(deck)}
-                  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-                >
-                  {deck.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Start Game button */}
-        {game.status === "waiting" && isGameReady && (
-          <button
-            onClick={startGame}
-            className="mt-6 px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Start Game
+      <div className="flex flex-col gap-4 mt-8">
+        <h3>Välj ett deck:</h3>
+        {availableDecks && availableDecks.map((deck: Deck) => (
+          <button key={deck.id} onClick={() => handleDeckSelection(deck)} className="btn">
+            {deck.name}
           </button>
-        )}
+        ))}
       </div>
+
+      {isGameReady && (
+        <button onClick={startGame} className="btn-start">
+          Starta Spelet
+        </button>
+      )}
     </div>
   );
 }
