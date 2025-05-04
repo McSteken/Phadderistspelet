@@ -66,18 +66,19 @@ export default function GamePage() {
           }
 
           // Fetch the active deck from user's decks (for hand)
-          if (gameData?.player1Deck === user.uid) {
-            const activeDeck = decksList.find((deck: Deck) => deck.id === gameData?.player1Deck);
-            if (activeDeck) {
-              setHand(activeDeck.cards); // Set the user's hand based on the deck cards
-            }
+          let availableDecks = [];
+
+          // Only show the current player's decks
+          if (gameData.player1 === user.uid) {
+            availableDecks = decksList; // Show Player 1's decks
+          } else if (gameData.player2 === user.uid) {
+            availableDecks = decksList; // Show Player 2's decks
           }
 
-          if (gameData.player1 === user.uid && gameData.player1Deck) {
-            setHand(gameData.player1Deck.cards);
-          }
-          if (gameData.player2 === user.uid && gameData.player2Deck) {
-            setHand(gameData.player2Deck.cards);
+          // Filter decks based on user selection
+          const activeDeck = availableDecks.find((deck: Deck) => deck.id === gameData?.player1Deck || gameData?.player2Deck);
+          if (activeDeck) {
+            setHand(activeDeck.cards); // Set the user's hand based on the deck cards
           }
 
           setLoading(false);
