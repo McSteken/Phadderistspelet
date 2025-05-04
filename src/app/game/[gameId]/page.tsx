@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { db } from "../../../../lib/firebase"; // Adjust path to your firebase config
+import { db } from "../../../../lib/firebase";
 import { doc, onSnapshot, getDoc, updateDoc } from "firebase/firestore";
-import { useAuth } from "../../../context/AuthContext"; // Adjust path to your AuthContext
+import { useAuth } from "../../../context/AuthContext";
 import Card from "../../components/card";
 
 // Types
@@ -32,7 +32,7 @@ export default function GamePage() {
   const { user } = useAuth(); // Make sure user is retrieved from context
 
   useEffect(() => {
-    if (!gameId || !user) return; // Ensure gameId and user are loaded
+    if (!gameId || !user) return;
 
     const fetchProfile = async () => {
       try {
@@ -79,7 +79,6 @@ export default function GamePage() {
           if (gameData.player2 === user.uid && gameData.player2Deck) {
             setHand(gameData.player2Deck.cards);
           }
-          
 
           setLoading(false);
         }, (err) => {
@@ -114,7 +113,7 @@ export default function GamePage() {
 
     if (!gameRef) {
       console.error("Invalid gameId:", gameId);
-      return; // or handle the error as needed
+      return;
     }
 
     // Proceed with Firestore update if gameRef is valid
@@ -131,7 +130,7 @@ export default function GamePage() {
 
   const startGame = async () => {
     if (!gameId) return;
-  
+
     try {
       const gameRef = doc(db, "games", gameId);
       await updateDoc(gameRef, { status: "in_progress" });
@@ -139,7 +138,6 @@ export default function GamePage() {
       console.error("Failed to start game:", error);
     }
   };
-  
 
   const isGameReady = player1DeckSelected && player2DeckSelected;
 
