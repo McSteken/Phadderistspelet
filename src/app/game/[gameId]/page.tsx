@@ -71,13 +71,8 @@ export default function GamePage() {
           const player1HasDeck = gameData?.player1Deck;
           const player2HasDeck = gameData?.player2Deck;
 
-          if (gameData.player1 === user.uid && player1HasDeck) {
-            setPlayer1DeckSelected(true);
-          }
-
-          if (gameData.player2 === user.uid && player2HasDeck) {
-            setPlayer2DeckSelected(true);
-          }
+          setPlayer1DeckSelected(!!gameData?.player1Deck);
+          setPlayer2DeckSelected(!!gameData?.player2Deck);
 
           setLoading(false);
         }, (err) => {
@@ -101,7 +96,9 @@ export default function GamePage() {
   }
 
   const handleDeckSelection = (deck: Deck) => {
+    console.log("Deck selected:", deck);
     setSelectedDeck(deck);
+    console.log("Deck selected:", deck);
 
     const updatedGameData = {
       ...game,
@@ -117,8 +114,11 @@ export default function GamePage() {
 
     // Proceed with Firestore update if gameRef is valid
     updateDoc(gameRef, updatedGameData)
+    
       .then(() => {
+        console.log("hej2")
         if (game.player1 === user.uid) {
+          console.log("hej")
           setPlayer1DeckSelected(true);
         } else {
           setPlayer2DeckSelected(true);
@@ -128,9 +128,11 @@ export default function GamePage() {
   };
 
   const startGame = async () => {
+    console.log("1");
     if (!gameId || !player1DeckSelected || !player2DeckSelected) return;
-
+    console.log("2");
     try {
+      console.log("3");
       const gameRef = doc(db, "games", gameId);
       await updateDoc(gameRef, { status: "in_progress" });
     } catch (error) {
@@ -140,6 +142,7 @@ export default function GamePage() {
 
   // Check if both players have selected their decks
   const isGameReady = player1DeckSelected && player2DeckSelected;
+  console.log("player1 deck ready?", player2DeckSelected);
 
   return (
     <div className="p-4">
