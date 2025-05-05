@@ -3,7 +3,7 @@
 
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../../lib/firebase"; 
-import { collection, query, where, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, getDoc, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -61,6 +61,36 @@ export default function JoinGame() {
     }
   };
 
+  const deleteGame = async (gameId: string) => {
+    try {
+      const gameRef = doc(db, "games", gameId);
+      await deleteDoc(gameRef); // Delete the game document
+      setGames((prevGames) => prevGames.filter((game) => game.id !== gameId)); // Update the local state
+      alert("Spelet har raderats.");
+    } catch (err) {
+      console.error("Failed to delete the game:", err);
+      alert("Kunde inte radera spelet, försök igen.");
+    }
+  };
+
+
+  const deleteAllGames = async () => {
+    try {
+      const gamesQuery = query(collection(db, "games"));
+      const querySnapshot = await getDocs(gamesQuery);
+
+      const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref)); // Delete all games
+      await Promise.all(deletePromises);
+
+      setGames([]); // Clear the local state
+      alert("Alla spel har raderats.");
+    } catch (err) {
+      console.error("Failed to delete all games:", err);
+      alert("Kunde inte radera alla spel, försök igen.");
+    }
+  };
+
+
   return (
     <div className="p-4">
       <h2 className="text-2xl mb-4">Tillgängliga spel</h2>
@@ -77,10 +107,24 @@ export default function JoinGame() {
               >
                 Gå med i spelet
               </button>
+              <button
+                onClick={() => deleteGame(game.id)}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              >
+                Radera spelet
+              </button>
+
             </li>
           ))}
         </ul>
       )}
+      <button
+        onClick={deleteAllGames}
+        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 mt-4"
+      >
+        Radera alla spel
+      </button>
+
     </div>
   );
 }
