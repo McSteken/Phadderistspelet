@@ -34,6 +34,11 @@ export default function GamePage() {
   const { user } = useAuth();
   const [cardsOnBoard, setCardsOnBoard] = useState<
   ({ card: UnlockedCard; playedBy: string | null } | null)[]>(Array(6).fill(null));
+  const isMobile = typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
+  const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
+  const [mobileSelectedCard, setMobileSelectedCard] = useState<UnlockedCard | null>(null);
+
+
 
   useEffect(() => {
     if (!gameId || !user) return;
@@ -218,7 +223,7 @@ export default function GamePage() {
                 {[0, 1, 2].map((col) => {
                   const index = row * 3 + col;
                   const tile = cardsOnBoard[index];
-
+                  
                   return (
                     <div
                       key={index}
@@ -229,6 +234,14 @@ export default function GamePage() {
                         const card = hand.find((c) => c.id === cardId);
                         if (card) handleCardDrop(card, index);
                       }}
+                      onClick={() => {
+                        if (isMobile && mobileSelectedCard && cardsOnBoard[index] === null) {
+                          handleCardDrop(mobileSelectedCard, index);
+                          setMobileSelectedCard(null);
+                          setFocusedCardId(null);
+                        }
+                      }}
+                      
                     >
                       {tile?.card ? (
                         <Card
@@ -239,7 +252,6 @@ export default function GamePage() {
                         <p className="text-gray-400">Place a card</p>
                       )}
                       <p className="mt-2 font-semibold text-sm text-gray-600">
-                        
                       </p>
                     </div>
                   );
@@ -250,22 +262,57 @@ export default function GamePage() {
 
           {/* Player hand */}
           <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-0">
-            {hand.map((card, index) => (
-              <div
-                key={card.id}
-                className="relative w-40 h-56 cursor-pointer transform transition-transform duration-300 hover:-translate-y-6"
-                style={{
-                  marginLeft: index > 0 ? "-1.5rem" : "0", // Adjusted margin to center
-                  marginRight: index < hand.length - 1 ? "-1.5rem" : "0", // Adjusted margin to center
-                  rotate: `${(index - hand.length/2 + 0.5) * 5 }deg`,
-                  zIndex: index,
-                }}
-                draggable
-                onDragStart={(e) => e.dataTransfer.setData("cardId", card.id)}
-              >
-                <Card cardId={card.id} collectionName={card.collection} />
-              </div>
-            ))}
+            {hand.map((card, index) => {
+              const isFocused = focusedCardId === card.id;
+              const isSelected = mobileSelectedCard?.id === card.id;
+              const defaultRotation = `${(index - hand.length / 2 + 0.5) * 5}deg`;
+
+              return (
+                <div
+                  key={card.id}
+                  className={`relative w-40 h-56 cursor-pointer transition-transform duration-300 ${
+                    !isMobile ? "hover:-translate-y-12 hover:scale-150" : ""
+                  } ${isSelected ? "ring-4 ring-purple-500" : ""}`}
+                  style={{
+                    marginLeft: index > 0 ? "-1.5rem" : "0",
+                    marginRight: index < hand.length - 1 ? "-1.5rem" : "0",
+                    rotate: isMobile && isFocused ? "0deg" : defaultRotation,
+                    zIndex: isMobile && isFocused ? 100 : index,
+                    transform: isMobile && isFocused ? "translateY(-50%) scale(2)" : undefined,
+                  }}
+                  draggable={!isMobile}
+                  onDragStart={
+                    !isMobile
+                      ? (e) => e.dataTransfer.setData("cardId", card.id)
+                      : undefined
+                  }
+                  onMouseEnter={
+                    !isMobile
+                      ? (e) => {
+                          e.currentTarget.style.rotate = "0deg";
+                          e.currentTarget.style.zIndex = "100";
+                        }
+                      : undefined
+                  }
+                  onMouseLeave={
+                    !isMobile
+                      ? (e) => {
+                          e.currentTarget.style.rotate = defaultRotation;
+                          e.currentTarget.style.zIndex = `${index}`;
+                        }
+                      : undefined
+                  }
+                  onClick={() => {
+                    if (isMobile) {
+                      setMobileSelectedCard((prev) => (prev?.id === card.id ? null : card));
+                      setFocusedCardId((prev) => (prev === card.id ? null : card.id));
+                    }
+                  }}
+                >
+                  <Card cardId={card.id} collectionName={card.collection} />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

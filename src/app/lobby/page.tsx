@@ -6,6 +6,7 @@ import { collection, addDoc, serverTimestamp, getDoc, doc } from "firebase/fires
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Navbar from "../components/navbar"; // Import Navbar component
 
 export default function Play() {
   const { user, loading } = useAuth();
@@ -59,6 +60,7 @@ export default function Play() {
 
   return (
     <div className="p-4">
+    <Navbar /> {/* Include Navbar component */}
       <input
         type="text"
         placeholder="Spelets namn"
