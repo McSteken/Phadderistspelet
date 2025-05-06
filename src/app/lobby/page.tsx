@@ -59,23 +59,26 @@ export default function Play() {
   };
 
   return (
-    <div className="p-4">
-    <Navbar /> {/* Include Navbar component */}
-      <input
-        type="text"
-        placeholder="Spelets namn"
-        value={gameName}
-        onChange={e => setGameName(e.target.value)}
-        className="w-full mb-4 p-2 border rounded"
-     />
-      
-      <button
-        onClick={startGame}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        disabled={loading}
-      >
-        {loading ? "Laddar..." : "Starta spel"}
-      </button>
+    <div className="flex justify-center items-center h-screen bg-gradient-to-r from-gray-800 to-gray-200 overflow-hidden max-h-screen">
+      <Navbar /> {/* Include Navbar component */}
+      <div className="flex flex-col items-center p-4 bg-gray-300 rounded-lg shadow-md w-1/3 gap-4">
+        <h1 className="text-2xl font-semibold text-gray-800 mt-2">Skapa ett nytt spel</h1>
+        <h2 className="text-2xl text-gray-600">Välj ett namn för ditt spel</h2>
+        <input
+          type="text"
+          placeholder="Namn"
+          value={gameName}
+          onChange={(e) => setGameName(e.target.value)}
+          className="w-3/4 mb-4 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-800 bg-gray-200 text-gray-800"
+        />
+        <button
+          onClick={startGame}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          disabled={loading}
+        >
+          {loading ? "Laddar..." : "Skapa spel"}
+        </button>
+      </div>
     </div>
   );
 }

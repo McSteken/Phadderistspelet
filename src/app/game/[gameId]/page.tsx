@@ -7,6 +7,8 @@ import { doc, onSnapshot, getDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../../../context/AuthContext";
 import Card from "../../components/card";
 import CustomButton from "@/app/components/customButton";
+import UserBox from "./userBox";
+import { FaCheck } from "react-icons/fa";
 
 type UnlockedCard = {
   id: string;
@@ -108,20 +110,39 @@ export default function GamePage() {
   const allowedSlots = isPlayer1 ? [3, 4, 5] : [0, 1, 2];
 
   const handleDeckSelection = (deck: Deck) => {
-    setSelectedDeck(deck);
+    if (selectedDeck?.id === deck.id) {
+      setSelectedDeck(null);
 
     const updatedGameData = {
       ...game,
-      [isPlayer1 ? "player1Deck" : "player2Deck"]: deck.id,
+      [isPlayer1 ? "player1Deck" : "player2Deck"]: null,
     };
 
     const gameRef = doc(db, "games", gameId!);
     updateDoc(gameRef, updatedGameData)
       .then(() => {
-        if (isPlayer1) setPlayer1DeckSelected(true);
-        else setPlayer2DeckSelected(true);
+        if (isPlayer1) setPlayer1DeckSelected(false);
+        else setPlayer2DeckSelected(false);
       })
       .catch((err) => console.error("Failed to update deck selection:", err));
+    }
+    else {
+      setSelectedDeck(deck);
+
+      const updatedGameData = {
+        ...game,
+        [isPlayer1 ? "player1Deck" : "player2Deck"]: deck.id,
+      };
+
+      const gameRef = doc(db, "games", gameId!);
+      updateDoc(gameRef, updatedGameData)
+        .then(() => {
+          if (isPlayer1) setPlayer1DeckSelected(true);
+          else setPlayer2DeckSelected(true);
+        })
+        .catch((err) => console.error("Failed to update deck selection:", err));
+    }
+      
   };
 
   const startGame = async () => {
@@ -161,22 +182,40 @@ export default function GamePage() {
   const isGameReady = player1DeckSelected && player2DeckSelected;
 
   return (
-    <div className="p-4">
+    <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-r from-gray-800 to-gray-200 overflow-hidden max-h-screen">
+      {/*       
       <h2 className="text-2xl mb-4">Spel: {game.name}</h2>
       <p>Player 1: {game.player1Name}</p>
       <p>Player 2: {game.player2Name || "Väntar på spelare..."}</p>
-      <p>Status: {game.status}</p>
+      <p>Status: {game.status}</p> 
+      */}
+
+      <div className="flex justify-between w-screen px-4 mt-12 h-1/2">
+        <UserBox
+          name={game.player1Name}
+          profilePicture={game.player1ProfilePicture}
+          isReady={player1DeckSelected}
+        />
+        <UserBox
+          name={game.player2Name || "Väntar på spelare..."}
+          profilePicture={game.player2ProfilePicture}
+          isReady={player2DeckSelected}
+        />
+      </div>
 
       {game.status !== "in_progress" && (
-        <div className="flex flex-col gap-4 mt-8">
-          <h3>Välj ett deck:</h3>
+        <div className="flex flex-col gap-4 mt-8 items-center justify-center">
+          <h2 className="font-bold text-gray-100 text-4xl mt-4">Välj ett deck:</h2>
           {availableDecks.map((deck: Deck) => (
             <button
               key={deck.id}
               onClick={() => handleDeckSelection(deck)}
-              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              className={`bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center justify-between w-64 hover:bg-purple-800 ${selectedDeck?.id === deck.id ? "ring-2 ring-gray-100 bg-purple-900" : ""}`}
             >
-              {deck.name}
+              <h2>{deck.name}</h2>
+              {selectedDeck?.id === deck.id && (
+                <FaCheck className="ml-2 text-green-400" /> // Show check mark if selected
+              )}
             </button>
           ))}
           {isGameReady && (
