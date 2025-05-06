@@ -39,6 +39,10 @@ export default function GamePage() {
   const isMobile = typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
   const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
   const [mobileSelectedCard, setMobileSelectedCard] = useState<UnlockedCard | null>(null);
+  const [remainingDeckCards, setRemainingDeckCards] = useState<UnlockedCard[]>([]);
+  const [handInitialized, setHandInitialized] = useState(false);
+
+
   
 
   useEffect(() => {
@@ -69,20 +73,19 @@ export default function GamePage() {
           setPlayer2DeckSelected(!!gameData?.player2Deck);
 
           if (gameData?.status === "in_progress") {
-            const deckId =
-              gameData.player1 === user.uid ? gameData.player1Deck : gameData.player2Deck;
+            const deckId = gameData.player1 === user.uid ? gameData.player1Deck : gameData.player2Deck;
             const selected = decksList.find((deck: Deck) => deck.id === deckId);
-          
             if (selected) {
-              setSelectedDeck((prev) => {
-                // Only set hand if we haven't already
-                if (!prev) {
-                  const random3Cards = selected.cards.sort(() => 0.5 - Math.random()).slice(0, 3);
-                  setHand(random3Cards);
-                }
-                return selected;
-              });
+              setSelectedDeck((prev) => prev ?? selected);
+            
+              if (!handInitialized) {
+                const shuffled = [...selected.cards].sort(() => 0.5 - Math.random());
+                setHand(shuffled.slice(0, 3));
+                setHandInitialized(true);
+              }
             }
+            
+            
           }
           
 
@@ -170,8 +173,17 @@ export default function GamePage() {
       playedBy: user.uid,
     };
 
-    setHand((prev) => prev.filter((c) => c.id !== card.id));
     setCardsOnBoard(updatedBoard);
+
+    setHand((prev) => {
+      const newHand = prev.filter((c) => c.id !== card.id);
+      if (remainingDeckCards.length > 0) {
+        const nextCard = remainingDeckCards[0];
+        setRemainingDeckCards((prevDeck) => prevDeck.slice(1));
+        return [...newHand, nextCard];
+      }
+      return newHand;
+    });
     
    
 
@@ -189,19 +201,25 @@ export default function GamePage() {
       <p>Player 2: {game.player2Name || "Väntar på spelare..."}</p>
       <p>Status: {game.status}</p> 
       */}
-
-      <div className="flex justify-between w-screen px-4 mt-12 h-1/2">
-        <UserBox
-          name={game.player1Name}
-          profilePicture={game.player1ProfilePicture}
-          isReady={player1DeckSelected}
-        />
-        <UserBox
-          name={game.player2Name || "Väntar på spelare..."}
-          profilePicture={game.player2ProfilePicture}
-          isReady={player2DeckSelected}
-        />
-      </div>
+      {game.status === "in_progress" ? (
+        <div className="flex justify-between w-full px-4 py-2 items-end bg-black bg-opacity-40">
+          <p className="text-white text-sm mt-8">{game.player1Name}</p>
+          <p className="text-white text-sm mt-8">{game.player2Name}</p>
+        </div>
+      ) : (
+        <div className="flex justify-between w-screen px-4 mt-12 h-1/2">
+          <UserBox
+            name={game.player1Name}
+            profilePicture={game.player1ProfilePicture}
+            isReady={player1DeckSelected}
+          />
+          <UserBox
+            name={game.player2Name || "Väntar på spelare..."}
+            profilePicture={game.player2ProfilePicture}
+            isReady={player2DeckSelected}
+          />
+        </div>
+        )}
 
       {game.status !== "in_progress" && (
         <div className="flex flex-col gap-4 mt-8 items-center justify-center">
