@@ -54,7 +54,7 @@ export default function Navbar() {
   return (
   <div className='absolute top-0 left-0 w-full z-10'>
     <nav className="flex items-center justify-between p-4 bg-gray-800 text-white">
-      {/* Back Button */}
+      {/* Back Button vill vi inte egentligen att tillbaka knappen ska routa till pagen bakom*/}
       <div className="flex items-center space-x-4">
         <button
           onClick={() => router.back()}

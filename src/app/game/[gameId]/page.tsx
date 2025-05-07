@@ -53,7 +53,7 @@ export default function GamePage() {
         const profileSnap = await getDoc(doc(db, "users", user.uid));
         const profile = profileSnap.exists() ? profileSnap.data() : {};
         const decksList = (profile as any).decks || [];
-
+    
         const matchRef = doc(db, "games", gameId as string);
         const unsub = onSnapshot(matchRef, (snapshot) => {
           if (!snapshot.exists()) {
@@ -61,46 +61,49 @@ export default function GamePage() {
             router.push("/");
             return;
           }
-
+    
           const gameData = snapshot.data();
           setGame(gameData);
-
+    
           if (gameData?.player1 === user.uid || gameData?.player2 === user.uid) {
             setAvailableDecks(decksList);
           }
-
+    
           setPlayer1DeckSelected(!!gameData?.player1Deck);
           setPlayer2DeckSelected(!!gameData?.player2Deck);
-
+    
           if (gameData?.status === "in_progress") {
             const deckId = gameData.player1 === user.uid ? gameData.player1Deck : gameData.player2Deck;
             const selected = decksList.find((deck: Deck) => deck.id === deckId);
             if (selected) {
               setSelectedDeck((prev) => prev ?? selected);
-            
+    
               if (!handInitialized) {
                 const shuffled = [...selected.cards].sort(() => 0.5 - Math.random());
-                setHand(shuffled.slice(0, 3));
+                const initialHand = shuffled.slice(0, 3);
+                const remaining = shuffled.slice(3).filter(
+                  (c) => !initialHand.some((h) => h.id === c.id) // avoid duplicate
+                );
+                setHand(initialHand);
+                setRemainingDeckCards(remaining);
                 setHandInitialized(true);
               }
             }
-            
-            
           }
-          
-
+    
           if (gameData?.board) {
             setCardsOnBoard(gameData.board);
           }
-
+    
           setLoading(false);
         });
-
+    
         return unsub;
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
       }
     };
+    
 
     fetchProfile();
   }, [gameId, user, router]);
@@ -176,14 +179,21 @@ export default function GamePage() {
     setCardsOnBoard(updatedBoard);
 
     setHand((prev) => {
-      const newHand = prev.filter((c) => c.id !== card.id);
+      const cardIndex = prev.findIndex((c) => c.id === card.id);
+      if (cardIndex === -1) return prev;
+    
+      const updatedHand = [...prev];
       if (remainingDeckCards.length > 0) {
-        const nextCard = remainingDeckCards[0];
-        setRemainingDeckCards((prevDeck) => prevDeck.slice(1));
-        return [...newHand, nextCard];
+        const [nextCard, ...rest] = remainingDeckCards;
+        setRemainingDeckCards(rest);
+        updatedHand[cardIndex] = nextCard;
+      } else {
+        updatedHand.splice(cardIndex, 1); // remove if deck empty
       }
-      return newHand;
+      return updatedHand;
     });
+    
+    
     
    
 
@@ -246,7 +256,7 @@ export default function GamePage() {
 
       {game.status === "in_progress" && (
         <div className="flex flex-col items-center justify-between min-h-screen">
-          <div className="flex flex-col justify-center items-center gap-y-10 w-[55vw] h-[80vh] mx-auto rounded-[10px] shadow-[0_4px_10px_rgba(0,0,0,0.3)] [transform:perspective(700px)_rotateX(30deg)] bg-[url('/images/table2.png')] bg-cover bg-center bg-no-repeat">
+          <div className="flex flex-col justify-center items-center gap-y-10 w-[55vw] h-[80vh] mx-auto -mt-10 rounded-[10px] shadow-[0_4px_10px_rgba(0,0,0,0.3)] [transform:perspective(700px)_rotateX(25deg)] bg-[url('/images/table2.png')] bg-cover bg-center bg-no-repeat">
             {[0, 1].map((row) => (
               <div key={row} className="flex gap-16 justify-center">
                 {[0, 1, 2].map((col) => {
@@ -258,7 +268,7 @@ export default function GamePage() {
                   return (
                     <div
                       key={index}
-                      className={`w-[120px] h-[160px] border-2 rounded-lg flex items-center justify-center relative transition-transform duration-300
+                      className={`w-[120px] h-[160px] border-2 rounded-lg flex items-center justify-center relative transition-transform duration-300 
                         ${isAllowed ? "border-purple-500 border-dashed bg-white/30" : "border-gray-300 bg-white/10"}
                         ${!tile ? "hover:scale-110 cursor-pointer" : ""}
                       `}

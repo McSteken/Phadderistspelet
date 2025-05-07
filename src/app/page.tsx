@@ -79,13 +79,16 @@ export default function Home() {
 
 
   return(     
-    <main className="bg-gradient-to-r from-gray-800 to-gray-200" >
-      <Navbar /> {/* Include Navbar component */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+    <main className="bg-gradient-to-r from-gray-800 to-gray-200 relative" >
+      <div className="absolute top-0 left-0 w-full z-50 z-10">
+        <Navbar />
+      </div>
+
+      <div className="absolute top left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         {backgroundCards.map((card, index) => (
           <motion.div
             key={card.id}
-            className="absolute w-50"
+            className="absolute w-45 pointer-events-none"
             initial={{
               x: Math.random() * window.innerWidth,
               y: Math.random() * window.innerHeight* 0.9,
@@ -113,32 +116,44 @@ export default function Home() {
           </motion.div>
         ))}
       </div>
-      <div className="relative z-10 h-screen flex flex-col items-center justify-center px-8 text-center">
-      <h1 className="text-4xl font-extrabold mb-6 font-[Cinzel] text-white text-shadow-lg">
-        Phadderistspelet
-      </h1>
-        {user ? (
-          <>
-            <h1 className="text-xs font-extrabold mb-6 font-[Cinzel] text-white text-shadow-lg"
-            style={{ fontSize: "26px" }}
-            >
-              Nämen Heeej {username}.
-            </h1>
+      <div className="relative z-10 h-screen flex items-center justify-center px-10">
+        <div className="bg-black/70 p-8 rounded-xl shadow-lg text-white text-center max-w-lg w-full">
+          <h1 className="text-4xl font-extrabold mb-6 font-[Cinzel] text-white">
+            Phadderistspelet
+          </h1>
 
-            {/* Buttons stacked under text */}
-            <div className="flex flex-col md:flex-row gap-4">
-              <CustomButton variant="nav" onClick={() => router.push("/deck")}>Deck</CustomButton>
-              <CustomButton variant = "nav"size="xlarge" onClick={() => router.push("/play")}>Play</CustomButton>
-              <CustomButton variant="nav" onClick={() => router.push("/collection")}>Cards</CustomButton>
+          {user ? (
+            <>
+              <h1
+                className="font-extrabold mb-6 font-[Cinzel]"
+                style={{ fontSize: "26px" }}
+              >
+                Nämen Heeej {username}.
+              </h1>
+
+              <div className="flex flex-col md:flex-row gap-4 justify-center">
+                <CustomButton variant="nav" onClick={() => router.push("/deck")}>
+                  Deck
+                </CustomButton>
+                <CustomButton variant="nav" size="xlarge" onClick={() => router.push("/play")}>
+                  Play
+                </CustomButton>
+                <CustomButton variant="nav" onClick={() => router.push("/collection")}>
+                  Cards
+                </CustomButton>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <h1 className="text-2xl font-bold">Vänligen logga in</h1>
+              <button onClick={goToLogin} className="p-2 bg-blue-500 text-white rounded">
+                Login
+              </button>
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-4 justify-center h-full">
-            <h1 className="text-2xl font-bold">Vänligen logga in</h1>
-            <button onClick={goToLogin} className="p-2 bg-blue-500 text-white rounded">Login</button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
     </main>
   )
 }
