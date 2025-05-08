@@ -120,6 +120,8 @@ export default function Home() {
         <div className="bg-black/70 p-8 rounded-xl shadow-lg text-white text-center max-w-lg w-full">
           <h1 className="text-4xl font-extrabold mb-6 font-[Cinzel] text-white">
             Phadderistspelet
+
+            
           </h1>
 
           {user ? (
