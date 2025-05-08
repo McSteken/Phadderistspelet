@@ -48,7 +48,7 @@ export default function Card({ cardId, collectionName, onClick, locked, showText
 
       {imageUrl && (
         <div         
-          className={`relative w-full h-52 mt-1 transition hover:shadow-xl ${
+          className={`relative w-full h-45 mt-1 transition hover:shadow-xl ${
             !locked && shadow && collectionName === "Legionen"
             ? "hover:shadow-red-500"
             : !locked && shadow && collectionName === "Skurkeriet"
