@@ -16,7 +16,6 @@ export default function Navbar() {
     const [error, setError] = useState(""); // State to hold error messages
 
     const dropdownRef = useRef<HTMLDivElement>(null); // Ref to manage dropdown element
-    console.error("Error signing out:", error);
 
   const goToLogin = () => {
     router.push("/login");

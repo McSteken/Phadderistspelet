@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { db } from "../../../../lib/firebase";
-import { doc, onSnapshot, getDoc, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { useAuth } from "../../../context/AuthContext";
 import Card from "../../components/card";
 import CustomButton from "@/app/components/customButton";
 import UserBox from "./userBox";
 import { FaCheck } from "react-icons/fa";
+import { stat } from "fs";
 
 type UnlockedCard = {
   id: string;
@@ -55,7 +56,7 @@ export default function GamePage() {
         const decksList = (profile as any).decks || [];
     
         const matchRef = doc(db, "games", gameId as string);
-        const unsub = onSnapshot(matchRef, (snapshot) => {
+        const unsub = onSnapshot(matchRef, async (snapshot) => {
           if (!snapshot.exists()) {
             console.error("Game not found!");
             router.push("/");
@@ -63,6 +64,18 @@ export default function GamePage() {
           }
     
           const gameData = snapshot.data();
+
+          if (!gameData.player1 && !gameData.player2) {
+            try {
+              await deleteDoc(matchRef);
+              console.log("Game deleted because both players left.");
+              return; // exit early to prevent setting state for a deleted game
+            } catch (err) {
+              console.error("Failed to delete game:", err);
+            }
+          }
+        
+
           setGame(gameData);
     
           if (gameData?.player1 === user.uid || gameData?.player2 === user.uid) {
@@ -164,6 +177,22 @@ export default function GamePage() {
     }
   };
 
+  const leaveGame = async () => {
+// if player leave game reset that player's deck and name
+    if (!gameId) return;
+    try {
+      const gameRef = doc(db, "games", gameId);
+      await updateDoc(gameRef, {
+        [isPlayer1 ? "player1Deck" : "player2Deck"]: null,
+        [isPlayer1 ? "player1Name" : "player2Name"]: null,
+        [isPlayer1 ? "player1" : "player2"]: null,
+        status: "waiting",
+      });
+      router.push("/play");
+    } catch (error) {
+      console.error("Failed to leave game:", error);
+    }
+  }
   const handleCardDrop = async (card: UnlockedCard, slotIndex: number) => {
     const realIndex = isPlayer1 ? slotIndex : 5 - slotIndex;
 
@@ -203,6 +232,8 @@ export default function GamePage() {
 
   
 
+
+
   const isGameReady = player1DeckSelected && player2DeckSelected;
 
   return (
@@ -221,7 +252,7 @@ export default function GamePage() {
       ) : (
         <div className="flex justify-between w-screen px-4 mt-12 h-1/2">
           <UserBox
-            name={game.player1Name}
+            name={game.player1Name || "Väntar på spelare..."}
             profilePicture={game.player1ProfilePicture}
             isReady={player1DeckSelected}
           />
@@ -234,26 +265,58 @@ export default function GamePage() {
         )}
 
       {game.status !== "in_progress" && (
-        <div className="flex flex-col gap-4 mt-8 items-center justify-center">
-          <h2 className="font-bold text-gray-100 text-4xl mt-4">Välj ett deck:</h2>
-          {availableDecks.map((deck: Deck) => (
-            <button
-              key={deck.id}
-              onClick={() => handleDeckSelection(deck)}
-              className={`bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center justify-between w-64 hover:bg-purple-800 ${selectedDeck?.id === deck.id ? "ring-2 ring-gray-100 bg-purple-900" : ""}`}
-            >
-              <h2>{deck.name}</h2>
-              {selectedDeck?.id === deck.id && (
-                <FaCheck className="ml-2 text-green-400" /> // Show check mark if selected
-              )}
-            </button>
-          ))}
-          {isGameReady && (
-            <CustomButton variant="primary" onClick={startGame}>
-              Start Game
-            </CustomButton>
-          )}
-        </div>
+        <div className="flex justify-between w-screen px-4 mt-12 h-1/3">
+
+          {/* decks */}
+          <div className="grid grid-cols-3 grid-rows-4 gap-3 p-4 rounded-lg w-1/3 mx-auto  place-items-start items-start">
+            <h2 className="font-bold text-gray-100 text-4xl mx-auto col-span-3">Välj ett deck:</h2>
+            {availableDecks.map((deck: Deck) => (
+              <button
+                key={deck.id}
+                onClick={() => handleDeckSelection(deck)}
+                className={`bg-blue-600 text-white w-full h-12 rounded hover:bg-purple-700 flex items-center justify-center mx-auto hover:bg-purple-800 ${
+                  selectedDeck?.id === deck.id ? "ring-2 ring-gray-100 bg-purple-900" : ""}`}
+              >
+                <h2 className="text-sm">{deck.name}</h2>
+                {selectedDeck?.id === deck.id && <FaCheck className="ml-2 text-green-400" />}
+              </button>
+            ))}
+          </div>  
+
+          <div className="absolute bottom-0 flex flex-col justify-center p-4 w-1/7 h-1/4 left-1/2 transform -translate-x-1/2 mb-7 gap-4 pb-8">
+          {/* buttons */}
+            <div className="">
+
+              <button
+                onClick={startGame}
+                disabled={!isGameReady}
+                className={`bg-green-600 text-white px-4 py-2 rounded ${isGameReady ? "hover:bg-green-800 hover:border-gray-400 shadow-sm hover:shadow-md active:scale-95" : "opacity-50 cursor-wait"} transition duration-300 border-2 border-gray-300 w-full`}
+              >
+                Starta spelet 
+              </button>
+            </div>
+
+            <div className="">
+              <button
+                onClick={leaveGame}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-300 border-2 border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md active:scale-95 w-full"
+              >
+                Lämna spelet
+              </button>
+            </div>
+          </div>
+
+
+
+          {/* chat */}
+          <div className="flex flex-col space-x-4 p-4 rounded-lg w-1/3 mx-auto h-full">
+            <h2 className="font-bold text-gray-100 text-4xl mb-2 mx-auto">Chat:</h2>
+            <div className="bg-gray-400 rounded-lg shadow-md p-4 h-[300px] overflow-y-auto">
+              <p>Chat messages...</p>
+            </div>
+            </div>
+      </div>
+
       )}
 
       {game.status === "in_progress" && (

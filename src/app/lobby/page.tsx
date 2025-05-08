@@ -45,7 +45,6 @@ export default function Play() {
         player2Deck: null,
         player1Move: null,
         player2Move: null,
-        decks: decksList, // 👈 Add all user's decks here
         status: "waiting",
         createdAt: serverTimestamp(),
       });

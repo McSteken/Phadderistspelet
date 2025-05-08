@@ -13,25 +13,30 @@ export default function JoinGame() {
 
   useEffect(() => {
     if (loading) return;
+  
     const fetchGames = async () => {
-      const gamesQuery = query(
-        collection(db, "games"),
-        where("status", "==", "waiting"),
-        where("player2", "==", null)
-      );
-
-      const querySnapshot = await getDocs(gamesQuery);
-      const gamesList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setGames(gamesList);
+      const gamesRef = collection(db, "games");
+  
+      const [player1NullSnap, player2NullSnap] = await Promise.all([
+        getDocs(query(gamesRef, where("status", "==", "waiting"), where("player1", "==", null))),
+        getDocs(query(gamesRef, where("status", "==", "waiting"), where("player2", "==", null))),
+      ]);
+  
+      // Combine both sets and remove duplicates by game ID
+      const allDocs = [...player1NullSnap.docs, ...player2NullSnap.docs];
+      const uniqueGamesMap = new Map();
+  
+      allDocs.forEach((doc) => {
+        uniqueGamesMap.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+  
+      setGames(Array.from(uniqueGamesMap.values()));
     };
-
+  
     fetchGames();
   }, [loading]);
 
+  
   const joinGame = async (gameId: string) => {
     if (!user || !user.uid) {
       alert("Du måste vara inloggad!");
@@ -44,12 +49,32 @@ export default function JoinGame() {
 
     try {
       const gameRef = doc(db, "games", gameId);
-      await updateDoc(gameRef, {
-        player2: user.uid,
-        player2Name: username,
-        player2Deck: null,
-        status: "waiting",
-      });
+
+      const gameSnap = await getDoc(gameRef);
+      const gameData = gameSnap.exists() ? gameSnap.data() : null;
+
+      if (gameData?.player1 == null) {
+        await updateDoc(gameRef, {
+          player1: user.uid,
+          player1Name: username,
+          player1Deck: null,
+          status: "waiting",
+        });
+      } 
+
+      else if (gameData?.player2 == null) {
+        await updateDoc(gameRef, {
+          player2: user.uid,
+          player2Name: username,
+          player2Deck: null,
+          status: "waiting",
+        });
+      } 
+      
+      else {
+        alert("Spelet är fullt!");
+        return;
+      }
 
       router.push(`/game/${gameId}`);
     } catch (err) {
