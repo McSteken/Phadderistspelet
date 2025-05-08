@@ -21,9 +21,7 @@ const UserBox: React.FC<UserBoxProps> = ({ name, profilePicture, isReady }) => {
               )}
             <div className="flex flex-col items-center">
                 <h1 className="text-lg font-semibold text-gray-800">{name}</h1>
-                <h2 className={`text-lg ${isReady ? 'text-green-500' : 'text-red-500'}`}>
-                    {isReady ? <FaCheckCircle className="inline h-16 w-16" /> : <h2 className="inline">Inte redo</h2>}
-                </h2>
+                    {isReady ? <FaCheckCircle className="inline h-16 w-16 text-green-500" /> : <h2 className="inline text-2xl font-bold text-red-600">Inte redo</h2>}
             </div>
         </div>
     );
