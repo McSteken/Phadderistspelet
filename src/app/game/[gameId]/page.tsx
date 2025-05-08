@@ -201,6 +201,8 @@ export default function GamePage() {
     await updateDoc(gameRef, { board: updatedBoard });
   };
 
+  
+
   const isGameReady = player1DeckSelected && player2DeckSelected;
 
   return (
