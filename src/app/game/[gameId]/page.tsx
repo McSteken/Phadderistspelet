@@ -203,6 +203,8 @@ export default function GamePage() {
 
   
 
+
+
   const isGameReady = player1DeckSelected && player2DeckSelected;
 
   return (
