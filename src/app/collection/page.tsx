@@ -9,6 +9,8 @@ import Navbar from "../components/navbar";
 import Menu from "./menu";
 import MainContent from "./mainContent";
 import UnlockCard from "./unlockCard";
+import CustomButton from "../components/customButton";
+import DeckManager from "./deckManager";
 
 
 export default function Collection() {
@@ -19,6 +21,8 @@ export default function Collection() {
     const [password, setPassword] = useState("");
     const [foundCard, setFoundCard] = useState<{ id: string; collection: "Legionen" | "Skurkeriet" } | null>(null); // State to hold found card
     const [selectedPhadderi, setSelectedPhadderi] = useState<"Legionen" | "Skurkeriet" | "Familjen" | "Kretsn" | "NPhadderiet" | null>(null); 
+    const [viewMode, setViewMode] = useState<"cards" | "decks">("cards");
+
 
     const [showUnlock, setShowUnlock] = useState(false); // State to manage unlock modal visibility
     const unlockRef = useRef<HTMLDivElement>(null); // Ref to manage unlock modal element
@@ -54,6 +58,14 @@ export default function Collection() {
     if(user) fetchUnlocked();
 
 }, [user]);
+
+    const unlockedCardsFlat = Object.entries(unlockedCards).flatMap(([collection, ids]) =>
+        ids.map((id) => ({
+        id,
+        collection: collection as "Legionen" | "Skurkeriet",
+        }))
+    );
+  
 
     const handleClickOutside = (event: { target: any; }) => {
         if (unlockRef.current && !unlockRef.current.contains(event.target)) {
@@ -179,36 +191,56 @@ export default function Collection() {
     return (
         <main>
             <Navbar />
-            <div className="flex min-h-screen pt-12">
+            
+            <div className="flex flex-col min-h-screen pt-16">
+                <div className="flex flex-col justify-center items-center ml-[20%]">
+                    <h1 className="text-2xl font-bold mb-4 p-8 pb-2">
+                        {viewMode === 'cards' ? 'Samling' : 'Decks'}
+                    </h1>
+                    <div className="flex justify-center mb-4 gap-2 pb-10">
+                        <CustomButton variant="secondary" onClick={() => setViewMode('cards')}>Alla kort</CustomButton>
+                        <CustomButton variant="secondary" onClick={() => setViewMode('decks')}>Decks</CustomButton>
+                    </div>
+                </div>
+                
 
-                <Menu
-                    phadderier={phadderier}
-                    selectedPhadderi={selectedPhadderi}
-                    setSelectedPhadderi={setSelectedPhadderi}
-                    onUnlockClick={() => setShowUnlock(true)}
-                />
 
-                <MainContent
-                    cards={cards}
-                    unlockedCards={unlockedCards}
-                    selectedPhadderi={selectedPhadderi}
-                    onCardClick={(card) => setSelectedCard(card)}
-                    onDeckClick={() => router.push("/deck")}
-                />
+                    <Menu
+                        phadderier={phadderier}
+                        selectedPhadderi={selectedPhadderi}
+                        setSelectedPhadderi={setSelectedPhadderi}
+                        onUnlockClick={() => setShowUnlock(true)}
+                    />
 
-                <UnlockCard
-                    show={showUnlock}
-                    unlockRef={unlockRef}
-                    password={password}
-                    error={error}
-                    cardId={cardId}
-                    foundCard={foundCard}
-                    onPasswordChange={setPassword}
-                    onSubmit={handleFindCard}
-                    onAdd={handleAddUnlockedCard}
-                    onClose={() => setShowUnlock(false)}
-                />
+                    {viewMode === "cards" ? (
+                    <MainContent
+                        cards={cards}
+                        unlockedCards={unlockedCards}
+                        selectedPhadderi={selectedPhadderi}
+                        onCardClick={(card) => setSelectedCard(card)}
+                    />
+                    ) : (
+                    <DeckManager
+                        user={user}
+                        unlockedCards={unlockedCardsFlat}
+                        setViewMode={setViewMode}
+                    />
+                    )}
+
+                    <UnlockCard
+                        show={showUnlock}
+                        unlockRef={unlockRef}
+                        password={password}
+                        error={error}
+                        cardId={cardId}
+                        foundCard={foundCard}
+                        onPasswordChange={setPassword}
+                        onSubmit={handleFindCard}
+                        onAdd={handleAddUnlockedCard}
+                        onClose={() => setShowUnlock(false)}
+                    />
             </div>
+            
         </main>
     );
 

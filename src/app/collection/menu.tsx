@@ -23,7 +23,7 @@ export default function Menu({
     <div className="w-1/5 fixed top-12 left-0 bottom-0 bg-gray-900 text-white p-4 pt-8 flex flex-col items-center overflow-y-auto">
       <h1 className="text-2xl font-bold py-2">Meny</h1>
       <button
-        className="mb-4 p-2 bg-green-500 text-white rounded hover:bg-blue-600"
+        className="mb-8 p-2 bg-green-500 text-white rounded hover:bg-blue-600"
         onClick={onUnlockClick}
       >
         Lås upp ett kort
@@ -35,7 +35,7 @@ export default function Menu({
           {phadderier.map((collectionName) => (
             <div
               key={collectionName}
-              className="w-[calc(50%-0.5rem)] max-w-[200px]"
+              className="w-[calc(45%-0.5rem)] max-w-[200px]"
             >
               <Icon
                 collectionName={collectionName as any}
