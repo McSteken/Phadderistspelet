@@ -48,7 +48,7 @@ export default function Card({ cardId, collectionName, onClick, locked, showText
 
       {imageUrl && (
         <div         
-          className={`relative w-full h-45 mt-1 transition hover:shadow-xl ${
+          className={`relative aspect-[2/3] w-full mt-1 transition hover:shadow-xl ${
             !locked && shadow && collectionName === "Legionen"
             ? "hover:shadow-red-500"
             : !locked && shadow && collectionName === "Skurkeriet"
@@ -60,8 +60,8 @@ export default function Card({ cardId, collectionName, onClick, locked, showText
           <Image
             src={locked ? "/cards/LTAB.png" : imageUrl}
             alt="Card Image"
-            layout="fill"
-            objectFit="contain"
+            fill
+            className="object-cover"
           />
           {locked && (
           <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>

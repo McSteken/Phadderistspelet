@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState, useRef, use } from "react";
 import { collection, getDocs, query, where, doc, updateDoc, getDoc, setDoc, arrayUnion } from "firebase/firestore";
-import { db } from "../../../lib/firebase"; // Import your Firestore instance
+import { db } from "../../../lib/firebase"; 
 import { useRouter } from 'next/navigation';
-import Card from "../components/card"; // Import the Card component
 import { useAuth } from "../../context/AuthContext";
-import Navbar from "../components/navbar"; // Import the Navbar component
-import CustomButton from "../components/customButton";
-import Icon from "./icon"
+import Navbar from "../components/navbar"; 
+import Menu from "./menu";
+import MainContent from "./mainContent";
+import UnlockCard from "./unlockCard";
 
 
 export default function Collection() {
@@ -18,6 +18,7 @@ export default function Collection() {
     const [cardId, setCardId] = useState<string | null>(null); // this replaces imageUrl
     const [password, setPassword] = useState("");
     const [foundCard, setFoundCard] = useState<{ id: string; collection: "Legionen" | "Skurkeriet" } | null>(null); // State to hold found card
+    const [selectedPhadderi, setSelectedPhadderi] = useState<"Legionen" | "Skurkeriet" | "Familjen" | "Kretsn" | "NPhadderiet" | null>(null); 
 
     const [showUnlock, setShowUnlock] = useState(false); // State to manage unlock modal visibility
     const unlockRef = useRef<HTMLDivElement>(null); // Ref to manage unlock modal element
@@ -30,6 +31,11 @@ export default function Collection() {
         Legionen: [],
         Skurkeriet: []
       });
+
+      const displayedCards = selectedPhadderi
+        ? cards.filter(card => card.collection === selectedPhadderi)
+        : cards;
+
 
     useEffect(() => {
     const fetchUnlocked = async () => {
@@ -166,103 +172,42 @@ export default function Collection() {
         fetchCards();
     }, [user]); 
 
+    const handleDeckClick = () => {
+
+    }
+
     return (
         <main>
             <Navbar />
-            <div className="flex min-h-screen">
-                {/* Left-side menu */}
-                <div className="w-1/5 bg-gray-900 text-white p-4 flex flex-col items-center">
-                    <h1 className="text-2xl font-bold py-2">Meny</h1>
-                    <button className="mb-4 p-2 bg-green-500 text-white rounded hover:bg-blue-600" onClick={() => setShowUnlock(true)}>Lås upp ett kort</button>
+            <div className="flex min-h-screen pt-12">
 
-                    <div className="flex flex-col gap-2 bg-gray-800 p-4 rounded-lg w-full items-center justify-center">
-                        <h2 className="text-lg font-bold self-center mb-4">Phadderier</h2>
-                        
-                        <div className="flex flex-wrap justify-center gap-4 mb-4 max-w-full">
-                            {(phadderier).map((collectionName) => (
-                                <div key={collectionName} className="w-[calc(50%-0.5rem)] max-w-[200px] aspect-square flex justify-center items-center"> {/*calc(50%-0.5rem) to make it responsive*/}
-                                    <Icon collectionName={collectionName} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                <Menu
+                    phadderier={phadderier}
+                    selectedPhadderi={selectedPhadderi}
+                    setSelectedPhadderi={setSelectedPhadderi}
+                    onUnlockClick={() => setShowUnlock(true)}
+                />
 
-                </div>
+                <MainContent
+                    cards={cards}
+                    unlockedCards={unlockedCards}
+                    selectedPhadderi={selectedPhadderi}
+                    onCardClick={(card) => setSelectedCard(card)}
+                    onDeckClick={() => router.push("/deck")}
+                />
 
-                {/* Main content */}
-                <div className="w-3/4 p-4 mx-auto flex flex-col">
-                    <h1 className="text-2xl font-bold mb-4 p-8">Collection</h1>
-                    {/* Buttons */}
-                    <div className="flex justify-center mb-4 gap-2 pb-10">
-                        <CustomButton variant="secondary" >Alla kort</CustomButton>
-                        <CustomButton variant="secondary" onClick={() => router.push("/deck")} >Decks</CustomButton>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                        {cards.map((card) => (
-                            <div
-                                key={card.id}
-                                className={`transition flex flex-col items-center `}
-                            >
-                                <h2 className="text-lg font-bold">{card.name}</h2>
-                                <Card   
-                                    cardId={card.id}
-                                    collectionName={card.collection}
-                                    locked={!unlockedCards[card.collection]?.includes(card.id)} 
-                                    onClick={() => {
-                                        setSelectedCard({ id: card.id, collection: card.collection });
-                                        console.log("Card clicked:", card.id);
-                                    }}
-                                    shadow={true} 
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                {showUnlock && (
-                    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }} // 50% transparent black
->
-                        <div ref={unlockRef} className="bg-white p-6 rounded shadow-lg w-1/3 text-black flex flex-col items-center">
-                            <h1 className="font-bold">Lås upp ett kort</h1>
-
-                            <form onSubmit={handleFindCard} className="flex flex-col gap-4">
-                                <input
-                                type="text"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Skriv in lösenordet..."
-                                className="p-2 border border-gray-300 rounded"
-                                />
-                                <button
-                                type="submit"
-                                className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 mb-4"
-                                >
-                                Checka Lösenord
-                                </button>
-                            </form>
-
-                            {error && <p className="text-red-500">{error}</p>}
-
-                            {cardId && (
-                                <>
-                                <div className="flex items-center justify-center w-3/4">
-                                    {foundCard?.collection && (
-                                        <Card cardId={cardId} collectionName={foundCard.collection} />
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={handleAddUnlockedCard}
-                                    className="mt-4 p-2 bg-green-500 text-white rounded hover:bg-green-600"
-                                >
-                                Lägg till i min samling
-                                </button>
-                                </>
-                            )}
-
-                            <button onClick={() => setShowUnlock(false)} className="mt-4 p-2 bg-blue-500 text-white rounded">Close</button>
-                        </div>
-                    </div>  
-                )}
+                <UnlockCard
+                    show={showUnlock}
+                    unlockRef={unlockRef}
+                    password={password}
+                    error={error}
+                    cardId={cardId}
+                    foundCard={foundCard}
+                    onPasswordChange={setPassword}
+                    onSubmit={handleFindCard}
+                    onAdd={handleAddUnlockedCard}
+                    onClose={() => setShowUnlock(false)}
+                />
             </div>
         </main>
     );
