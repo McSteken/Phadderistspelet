@@ -46,6 +46,7 @@ export default function JoinGame() {
     const profileSnap = await getDoc(doc(db, "users", user.uid));
     const profile = profileSnap.exists() ? profileSnap.data() : {};
     const username = (profile as any).username || "Spelare 2";
+    const profilePic = (profile as any).photoURL || null;
 
     try {
       const gameRef = doc(db, "games", gameId);
@@ -58,6 +59,7 @@ export default function JoinGame() {
           player1: user.uid,
           player1Name: username,
           player1Deck: null,
+          player1ProfilePic: profilePic,
           status: "waiting",
         });
       } 
@@ -67,6 +69,7 @@ export default function JoinGame() {
           player2: user.uid,
           player2Name: username,
           player2Deck: null,
+          player2ProfilePic: profilePic,
           status: "waiting",
         });
       } 

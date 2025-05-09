@@ -12,7 +12,9 @@ const UserBox: React.FC<UserBoxProps> = ({ name, profilePicture, isReady }) => {
     return (
         <div className="flex flex-col items-center space-x-4 p-4 bg-gray-100 rounded-lg shadow-md w-1/3 mx-auto h-full">
             {profilePicture ? (
-                <img src={profilePicture} alt={`${name}'s profile`} className="w-12 h-12 rounded-full" />
+                <div className="w-full h-full flex items-center justify-center">
+                    <img src={profilePicture} alt={`${name}'s profile`} className="w-32 h-32 rounded-full" />
+                </div>
             ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-600">
                   {/* Placeholder for no profile picture */}

@@ -31,6 +31,7 @@ export default function Play() {
     const profile = profileSnap.exists() ? profileSnap.data() : {};
     const username = (profile as any).username || "Spelare 1";
     const decksList = (profile as any). decks || "";
+    const profilePic = (profile as any).photoURL || null;
     
 
 
@@ -39,6 +40,7 @@ export default function Play() {
         name: gameName,
         player1: user.uid,
         player1Name: username,
+        player1ProfilePic: profilePic,
         player1Deck: null, // Don't assign here, let them select
         player2: null,
         player2Name: null,

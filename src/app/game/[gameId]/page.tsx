@@ -253,12 +253,12 @@ export default function GamePage() {
         <div className="flex justify-between w-screen px-4 mt-12 h-1/2">
           <UserBox
             name={game.player1Name || "Väntar på spelare..."}
-            profilePicture={game.player1ProfilePicture}
+            profilePicture={game.player1ProfilePic}
             isReady={player1DeckSelected}
           />
           <UserBox
             name={game.player2Name || "Väntar på spelare..."}
-            profilePicture={game.player2ProfilePicture}
+            profilePicture={game.player2ProfilePic}
             isReady={player2DeckSelected}
           />
         </div>
