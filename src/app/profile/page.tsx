@@ -245,7 +245,15 @@ export default function BoardPage() {
 
             {/* Card Selection Modal */}
             {showCardModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div
+                className="fixed inset-0 bg-gray-1000 bg-opacity-95 flex items-center justify-center z-50"
+                onClick={(e) => {
+                  // Close modal if the user clicks outside the modal content
+                  if (e.target === e.currentTarget) {
+                    setShowCardModal(false);
+                  }
+                }}
+              >
                 <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-h-[80vh] overflow-y-auto">
                   <h2 className="text-xl text-black font-bold mb-4">Välj ett kort</h2>
                   <div className="grid grid-cols-4 gap-4">
