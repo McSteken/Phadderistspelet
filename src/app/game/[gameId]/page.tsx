@@ -42,18 +42,20 @@ export default function GamePage() {
   const [mobileSelectedCard, setMobileSelectedCard] = useState<UnlockedCard | null>(null);
   const [remainingDeckCards, setRemainingDeckCards] = useState<UnlockedCard[]>([]);
   const [handInitialized, setHandInitialized] = useState(false);
-
+  
 
   
 
   useEffect(() => {
     if (!gameId || !user) return;
-
+    
+   
     const fetchProfile = async () => {
       try {
         const profileSnap = await getDoc(doc(db, "users", user.uid));
         const profile = profileSnap.exists() ? profileSnap.data() : {};
         const decksList = (profile as any).decks || [];
+        
     
         const matchRef = doc(db, "games", gameId as string);
         const unsub = onSnapshot(matchRef, async (snapshot) => {
@@ -64,6 +66,7 @@ export default function GamePage() {
           }
     
           const gameData = snapshot.data();
+          const isPlayer1 = gameData.player1 === user.uid;
 
           if (!gameData.player1 && !gameData.player2) {
             try {
@@ -86,23 +89,12 @@ export default function GamePage() {
           setPlayer2DeckSelected(!!gameData?.player2Deck);
     
           if (gameData?.status === "in_progress") {
-            const deckId = gameData.player1 === user.uid ? gameData.player1Deck : gameData.player2Deck;
-            const selected = decksList.find((deck: Deck) => deck.id === deckId);
-            if (selected) {
-              setSelectedDeck((prev) => prev ?? selected);
-    
-              if (!handInitialized) {
-                const shuffled = [...selected.cards].sort(() => 0.5 - Math.random());
-                const initialHand = shuffled.slice(0, 3);
-                const remaining = shuffled.slice(3).filter(
-                  (c) => !initialHand.some((h) => h.id === c.id) // avoid duplicate
-                );
-                setHand(initialHand);
-                setRemainingDeckCards(remaining);
-                setHandInitialized(true);
-              }
-            }
+            const handKey = isPlayer1 ? "player1Hand" : "player2Hand";
+            const remainingKey = isPlayer1 ? "player1Remaining" : "player2Remaining";
+            setHand(gameData[handKey] || []);
+            setRemainingDeckCards(gameData[remainingKey] || []);
           }
+
     
           if (gameData?.board) {
             setCardsOnBoard(gameData.board);
@@ -125,7 +117,7 @@ export default function GamePage() {
     return <div className="p-4">Laddar spel…</div>;
   }
 
-  const isPlayer1 = game.player1 === user.uid;
+   const isPlayer1 = game.player1 === user.uid;
   const allowedSlots = isPlayer1 ? [3, 4, 5] : [0, 1, 2];
 
   const handleDeckSelection = (deck: Deck) => {
@@ -165,17 +157,29 @@ export default function GamePage() {
   };
 
   const startGame = async () => {
-    if (!gameId || !player1DeckSelected || !player2DeckSelected) return;
-    try {
-      const gameRef = doc(db, "games", gameId);
-      await updateDoc(gameRef, {
-        status: "in_progress",
-        board: Array(6).fill(null),
-      });
-    } catch (error) {
-      console.error("Failed to start game:", error);
-    }
-  };
+  if (!gameId || !player1DeckSelected || !player2DeckSelected) return;
+
+  const deckId = isPlayer1 ? game.player1Deck : game.player2Deck;
+  const selected = availableDecks.find((deck: Deck) => deck.id === deckId);
+  if (!selected) return;
+
+  const shuffled = [...selected.cards].sort(() => 0.5 - Math.random());
+  const initialHand = shuffled.slice(0, 3);
+  const remaining = shuffled.slice(3);
+
+  try {
+    const gameRef = doc(db, "games", gameId);
+    await updateDoc(gameRef, {
+      status: "in_progress",
+      board: Array(6).fill(null),
+      [`${isPlayer1 ? "player1Hand" : "player2Hand"}`]: initialHand,
+      [`${isPlayer1 ? "player1Remaining" : "player2Remaining"}`]: remaining,
+    });
+  } catch (error) {
+    console.error("Failed to start game:", error);
+  }
+};
+
 
   const leaveGame = async () => {
 // if player leave game reset that player's deck and name
@@ -193,42 +197,50 @@ export default function GamePage() {
       console.error("Failed to leave game:", error);
     }
   }
+  
   const handleCardDrop = async (card: UnlockedCard, slotIndex: number) => {
-    const realIndex = isPlayer1 ? slotIndex : 5 - slotIndex;
+  const realIndex = isPlayer1 ? slotIndex : 5 - slotIndex;
 
-    if (!allowedSlots.includes(realIndex)) return;
-    if (cardsOnBoard[realIndex] !== null) return;
+  if (!allowedSlots.includes(realIndex)) return;
+  if (cardsOnBoard[realIndex] !== null) return;
 
-    const updatedBoard = [...cardsOnBoard];
-    updatedBoard[realIndex] = {
-      card,
-      playedBy: user.uid,
-    };
-
-    setCardsOnBoard(updatedBoard);
-
-    setHand((prev) => {
-      const cardIndex = prev.findIndex((c) => c.id === card.id);
-      if (cardIndex === -1) return prev;
-    
-      const updatedHand = [...prev];
-      if (remainingDeckCards.length > 0) {
-        const [nextCard, ...rest] = remainingDeckCards;
-        setRemainingDeckCards(rest);
-        updatedHand[cardIndex] = nextCard;
-      } else {
-        updatedHand.splice(cardIndex, 1); // remove if deck empty
-      }
-      return updatedHand;
-    });
-    
-    
-    
-   
-
-    const gameRef = doc(db, "games", gameId!);
-    await updateDoc(gameRef, { board: updatedBoard });
+  const updatedBoard = [...cardsOnBoard];
+  updatedBoard[realIndex] = {
+    card,
+    playedBy: user.uid,
   };
+
+  const cardIndex = hand.findIndex((c) => c.id === card.id);
+  if (cardIndex === -1) return;
+
+  let newHand = [...hand];
+  let newRemaining = [...remainingDeckCards];
+
+  if (newRemaining.length > 0) {
+    const [nextCard, ...rest] = newRemaining;
+    newHand[cardIndex] = nextCard;
+    newRemaining = rest;
+  } else {
+    newHand.splice(cardIndex, 1); // remove the card entirely
+  }
+
+  // Update local state
+  setCardsOnBoard(updatedBoard);
+  setHand(newHand);
+  setRemainingDeckCards(newRemaining);
+
+  // Save to Firestore
+  const gameRef = doc(db, "games", gameId!);
+  const handKey = isPlayer1 ? "player1Hand" : "player2Hand";
+  const remainingKey = isPlayer1 ? "player1Remaining" : "player2Remaining";
+
+  await updateDoc(gameRef, {
+    board: updatedBoard,
+    [handKey]: newHand,
+    [remainingKey]: newRemaining,
+  });
+};
+
 
   
 
