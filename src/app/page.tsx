@@ -130,7 +130,7 @@ export default function Home() {
                 className="font-extrabold mb-6 font-[Cinzel]"
                 style={{ fontSize: "26px" }}
               >
-                Nämen Heeej {username}.
+                Nämen heeej {username}.
               </h1>
 
               <div className="flex flex-col md:flex-row gap-4 justify-center">

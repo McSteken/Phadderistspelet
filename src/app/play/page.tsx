@@ -17,12 +17,12 @@ export default function PlayMenu() {
         <h1 className="text-3xl font-bold mb-6">Välj ett deck för att spela</h1>
 
         <CustomButton variant="nav" size="xlarge" onClick={() => router.push("/lobby")}>
-          Create Lobby
+          Skapa Lobby
         </CustomButton>
         
 
         <CustomButton variant="nav" size="xlarge" onClick={() => router.push("/join")}>
-          Join
+          Gå med
         </CustomButton>
       </div>
     </main>

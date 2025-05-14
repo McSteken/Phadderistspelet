@@ -14,7 +14,13 @@ import DeckManager from "./deckManager";
 
 
 export default function Collection() {
-    const [cards, setCards] = useState<{ id: string; name?: string; collection: "Legionen" | "Skurkeriet"}[]>([]); // State to hold all cards
+    const [cards, setCards] = useState<{ 
+        id: string; name?: 
+        string; collection: "Legionen" | "Skurkeriet"; 
+        power1Str?: string; 
+        power2Str?: string; 
+        power3Str?: string 
+    }[]>([]); 
     const [selectedCard, setSelectedCard] = useState<{ id: string, collection: "Legionen" | "Skurkeriet" } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [cardId, setCardId] = useState<string | null>(null); // this replaces imageUrl
@@ -24,11 +30,11 @@ export default function Collection() {
     const [viewMode, setViewMode] = useState<"cards" | "decks">("cards");
 
 
+
     const [showUnlock, setShowUnlock] = useState(false); // State to manage unlock modal visibility
     const unlockRef = useRef<HTMLDivElement>(null); // Ref to manage unlock modal element
     const { user } = useAuth(); // Retrieve the authenticated user
 
-    const router = useRouter(); // Use Next.js router for navigation
     const phadderier = ["Legionen", "Skurkeriet", "Familjen", "Kretsn", "NPhadderiet"] as const; // Define the phadderier collections
 
     const [unlockedCards, setUnlockedCards] = useState<Record<"Legionen" | "Skurkeriet", string[]>>({
@@ -36,9 +42,13 @@ export default function Collection() {
         Skurkeriet: []
       });
 
-      const displayedCards = selectedPhadderi
-        ? cards.filter(card => card.collection === selectedPhadderi)
-        : cards;
+    const [powerFilter, setPowerFilter] = useState({
+        power1: 0,
+        power2: 0,
+        power3: 0,
+    });
+
+
 
 
     useEffect(() => {
@@ -184,9 +194,6 @@ export default function Collection() {
         fetchCards();
     }, [user]); 
 
-    const handleDeckClick = () => {
-
-    }
 
     return (
         <main>
@@ -210,6 +217,8 @@ export default function Collection() {
                         selectedPhadderi={selectedPhadderi}
                         setSelectedPhadderi={setSelectedPhadderi}
                         onUnlockClick={() => setShowUnlock(true)}
+                        powerFilter={powerFilter}
+                        setPowerFilter={setPowerFilter}
                     />
 
                     {viewMode === "cards" ? (
@@ -217,7 +226,16 @@ export default function Collection() {
                         cards={cards}
                         unlockedCards={unlockedCards}
                         selectedPhadderi={selectedPhadderi}
-                        onCardClick={(card) => setSelectedCard(card)}
+                        onCardClick={(card) => {
+                            setSelectedCard(card); // Set the selected card
+                            const selectedCardDetails = cards.find((c) => c.id === card.id); // Find the full card details
+                            if (selectedCardDetails) {
+                            console.log(
+                                `Selected Card: ${selectedCardDetails.name}, Power1: ${selectedCardDetails.power1Str}, Power2: ${selectedCardDetails.power2Str}, Power3: ${selectedCardDetails.power3Str}`
+                            );
+                            }
+                        } }                       
+                        powerFilter={powerFilter}
                     />
                     ) : (
                     <DeckManager

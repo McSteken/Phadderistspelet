@@ -53,7 +53,7 @@ export default function Card({ cardId, collectionName, onClick, locked, showText
             ? "hover:shadow-red-500"
             : !locked && shadow && collectionName === "Skurkeriet"
             ? "hover:shadow-yellow-500"
-            : ""
+            : "hover:shadow-gray-800"
           } `
           }
         >

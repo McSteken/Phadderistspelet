@@ -8,6 +8,9 @@ type CardType = {
   id: string;
   name?: string;
   collection: 'Legionen' | 'Skurkeriet';
+  power1Str?: string;
+  power2Str?: string;
+  power3Str?: string;
 };
 
 type MainContentProps = {
@@ -15,6 +18,11 @@ type MainContentProps = {
   unlockedCards: Record<'Legionen' | 'Skurkeriet', string[]>;
   selectedPhadderi: string | null;
   onCardClick: (card: { id: string; collection: 'Legionen' | 'Skurkeriet' }) => void;
+  powerFilter: {
+    power1: number;
+    power2: number;
+    power3: number;
+  };
 };
 
 export default function MainContent({
@@ -22,10 +30,23 @@ export default function MainContent({
   unlockedCards,
   selectedPhadderi,
   onCardClick,
+  powerFilter,
+
 }: MainContentProps) {
-  const displayedCards = selectedPhadderi
-    ? cards.filter((card) => card.collection === selectedPhadderi)
-    : cards;
+    const displayedCards = cards.filter(card => {
+      const matchesPhadderi = selectedPhadderi ? card.collection === selectedPhadderi : true;
+
+      const power1 = Number(card.power1Str ?? 0);
+      const power2 = Number(card.power2Str ?? 0);
+      const power3 = Number(card.power3Str ?? 0);
+
+      const matchesPower =
+          power1 >= powerFilter.power1 &&
+          power2 >= powerFilter.power2 &&
+          power3 >= powerFilter.power3;
+
+      return matchesPhadderi && matchesPower;
+    });
 
   return (
     <div className="w-4/5 ml-[20%] p-4 mx-auto flex flex-col">

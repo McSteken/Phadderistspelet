@@ -6,12 +6,14 @@ import { collection, addDoc, serverTimestamp, getDoc, doc } from "firebase/fires
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Navbar from "../components/navbar"; // Import Navbar component
+import Navbar from "../components/navbar"; // 
+import LoadingSpinner from "../components/loadingSpinner";
 
 export default function Play() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [gameName, setGameName] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const searchParams = useSearchParams();
   const deckId = searchParams.get("deckId");
 
@@ -27,13 +29,13 @@ export default function Play() {
     if (!gameName.trim()) {
       return alert("Ge ditt spel ett namn!");
     }
+
+    setIsSubmitting(true);
+
     const profileSnap = await getDoc(doc(db, "users", user.uid));
     const profile = profileSnap.exists() ? profileSnap.data() : {};
     const username = (profile as any).username || "Spelare 1";
-    const decksList = (profile as any). decks || "";
     const profilePic = (profile as any).photoURL || null;
-    
-
 
     try {
       const gameRef = await addDoc(collection(db, "games"), {
@@ -72,13 +74,19 @@ export default function Play() {
           onChange={(e) => setGameName(e.target.value)}
           className="w-3/4 mb-4 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-800 bg-gray-200 text-gray-800"
         />
-        <button
-          onClick={startGame}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          disabled={loading}
-        >
-          {loading ? "Laddar..." : "Skapa spel"}
-        </button>
+        {isSubmitting ? (
+            <LoadingSpinner />
+          ) : (
+            <button
+              onClick={startGame}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              disabled={loading}
+            >
+              Skapa Spel
+            </button>          
+
+            )}
+
       </div>
     </div>
   );
