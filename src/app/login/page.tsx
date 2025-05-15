@@ -6,6 +6,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "fire
 import { db } from "../../../lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore"; // Import Firestore functions
 import { collection, getDocs, query, where } from "firebase/firestore"; // Import Firestore functions
+import { sendPasswordResetEmail } from "firebase/auth";
 
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { ImSpinner2 } from "react-icons/im";
@@ -23,6 +24,9 @@ export default function LoginPage() {
     const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
     const [checkingUsername, setCheckingUsername] = useState(false); // State to hold the checked username
 
+    const [showResetPassword, setShowResetPassword] = useState(false);
+    const [resetEmail, setResetEmail] = useState("");
+    const [resetStatus, setResetStatus] = useState("");
 
     const [error, setError] = useState(""); // State to hold error messages
     const [loading, setLoading] = useState(false); // State to manage loading state
@@ -70,6 +74,20 @@ export default function LoginPage() {
             setCheckingUsername(false);
           }
     }
+
+    const handlePasswordReset = async () => {
+        setResetStatus("");
+        if (!resetEmail) {
+            setResetStatus("Ange en giltig e-postadress.");
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, resetEmail);
+            setResetStatus("✔ Länk för återställning skickad!");
+        } catch (error: any) {
+            setResetStatus(error.message);
+        }
+    };
 
     // Function to handle authentication (login/signup)
     const handleAuth = async (e: React.FormEvent) => {
@@ -207,7 +225,7 @@ export default function LoginPage() {
 
                     </div>
                 )}
-
+                
                 {/* Email */}
                 {!isLogin && (
                     <div className="relative w-full" >
@@ -239,6 +257,7 @@ export default function LoginPage() {
                         className="p-2 border rounded"
                         required
                     />
+                    
 
                     {!isLogin && (
                         // icons
@@ -284,7 +303,44 @@ export default function LoginPage() {
                         )}
                     </div>
                 )}
-
+                {isLogin && (
+                <>
+                    {showResetPassword ? (
+                    <div className="flex flex-col gap-2">
+                        <input
+                        type="email"
+                        placeholder="Din e-post"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        className="p-2 border rounded"
+                        />
+                        <button
+                        type="button"
+                        onClick={handlePasswordReset}
+                        className="p-2 bg-yellow-500 text-white rounded"
+                        >
+                        Skicka återställningslänk
+                        </button>
+                        {resetStatus && <p className="text-sm text-gray-600">{resetStatus}</p>}
+                        <button
+                        type="button"
+                        onClick={() => setShowResetPassword(false)}
+                        className="text-blue-500 underline"
+                        >
+                        Tillbaka till inloggning
+                        </button>
+                    </div>
+                    ) : (
+                    <button
+                        type="button"
+                        onClick={() => setShowResetPassword(true)}
+                        className="text-blue-500 underline"
+                    >
+                        Glömt lösenord?
+                    </button>
+                    )}
+                </>
+                )}
                 {/* If password and confirmpassword dont match, dont light up button */}
                 <button
                     type="submit"
