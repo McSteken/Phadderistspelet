@@ -121,64 +121,62 @@ export default function GamePage() {
   const allowedSlots = isPlayer1 ? [3, 4, 5] : [0, 1, 2];
 
   const handleDeckSelection = (deck: Deck) => {
-    if (selectedDeck?.id === deck.id) {
-      setSelectedDeck(null);
+  const isSameDeck = selectedDeck?.id === deck.id;
+  const playerPrefix = isPlayer1 ? "player1" : "player2";
 
-    const updatedGameData = {
-      ...game,
-      [isPlayer1 ? "player1Deck" : "player2Deck"]: null,
-    };
+  const gameRef = doc(db, "games", gameId!);
 
-    const gameRef = doc(db, "games", gameId!);
-    updateDoc(gameRef, updatedGameData)
-      .then(() => {
-        if (isPlayer1) setPlayer1DeckSelected(false);
-        else setPlayer2DeckSelected(false);
-      })
-      .catch((err) => console.error("Failed to update deck selection:", err));
-    }
-    else {
-      setSelectedDeck(deck);
+  if (isSameDeck) {
+    setSelectedDeck(null);
+    updateDoc(gameRef, {
+      [`${playerPrefix}Deck`]: null,
+      [`${playerPrefix}DeckCards`]: null,
+    }).then(() => {
+      if (isPlayer1) setPlayer1DeckSelected(false);
+      else setPlayer2DeckSelected(false);
+    }).catch((err) => console.error("Failed to update deck deselection:", err));
+  } else {
+    setSelectedDeck(deck);
+    updateDoc(gameRef, {
+      [`${playerPrefix}Deck`]: deck.id,
+      [`${playerPrefix}DeckCards`]: deck.cards, // 🟢 Store full card list
+    }).then(() => {
+      if (isPlayer1) setPlayer1DeckSelected(true);
+      else setPlayer2DeckSelected(true);
+    }).catch((err) => console.error("Failed to update deck selection:", err));
+  }
+};
 
-      const updatedGameData = {
-        ...game,
-        [isPlayer1 ? "player1Deck" : "player2Deck"]: deck.id,
-      };
-
-      const gameRef = doc(db, "games", gameId!);
-      updateDoc(gameRef, updatedGameData)
-        .then(() => {
-          if (isPlayer1) setPlayer1DeckSelected(true);
-          else setPlayer2DeckSelected(true);
-        })
-        .catch((err) => console.error("Failed to update deck selection:", err));
-    }
-      
-  };
 
   const startGame = async () => {
   if (!gameId || !player1DeckSelected || !player2DeckSelected) return;
 
-  const deckId = isPlayer1 ? game.player1Deck : game.player2Deck;
-  const selected = availableDecks.find((deck: Deck) => deck.id === deckId);
-  if (!selected) return;
+  const player1Deck = game.player1DeckCards;
+  const player2Deck = game.player2DeckCards;
 
-  const shuffled = [...selected.cards].sort(() => 0.5 - Math.random());
-  const initialHand = shuffled.slice(0, 3);
-  const remaining = shuffled.slice(3);
+  if (!player1Deck || !player2Deck) return;
 
-  try {
-    const gameRef = doc(db, "games", gameId);
-    await updateDoc(gameRef, {
-      status: "in_progress",
-      board: Array(6).fill(null),
-      [`${isPlayer1 ? "player1Hand" : "player2Hand"}`]: initialHand,
-      [`${isPlayer1 ? "player1Remaining" : "player2Remaining"}`]: remaining,
-    });
-  } catch (error) {
-    console.error("Failed to start game:", error);
-  }
+  const shuffled1 = [...player1Deck].sort(() => 0.5 - Math.random());
+  const shuffled2 = [...player2Deck].sort(() => 0.5 - Math.random());
+
+  const player1Hand = shuffled1.slice(0, 3);
+  const player1Remaining = shuffled1.slice(3);
+
+  const player2Hand = shuffled2.slice(0, 3);
+  const player2Remaining = shuffled2.slice(3);
+
+  const gameRef = doc(db, "games", gameId);
+  await updateDoc(gameRef, {
+    status: "in_progress",
+    board: Array(6).fill(null),
+    player1Hand,
+    player1Remaining,
+    player2Hand,
+    player2Remaining,
+  });
 };
+
+
 
 
   const leaveGame = async () => {
