@@ -208,6 +208,46 @@ export default function GamePage() {
     playedBy: user.uid,
   };
 
+  console.log(card.id, "dropped on slot", realIndex);
+
+  // 🔍 Fetch card details from the correct collection
+  try {
+    const cardDocRef = doc(db, card.collection, card.id);
+    const cardSnap = await getDoc(cardDocRef);
+
+    if (cardSnap.exists()) {
+      const cardData = cardSnap.data();
+
+        const slotIndexForPlayer = allowedSlots.indexOf(realIndex);
+
+  let powerIndex = slotIndexForPlayer;
+
+  // Flip the order for player 2
+  if (!isPlayer1) {
+    powerIndex = 2 - slotIndexForPlayer;
+  }
+
+  switch (powerIndex) {
+    case 0:
+      console.log("Power 1:", cardData.power1Name, "-", cardData.power1Str);
+      break;
+    case 1:
+      console.log("Power 2:", cardData.power2Name, "-", cardData.power2Str);
+      break;
+    case 2:
+      console.log("Power 3:", cardData.power3Name, "-", cardData.power3Str);
+      break;
+    default:
+      console.log("Dropped in invalid slot index for powers.");
+  }
+
+    } else {
+      console.warn("Card data not found in collection:", card.collection, "with id:", card.id);
+    }
+  } catch (err) {
+    console.error("Error fetching card details:", err);
+  }
+
   const cardIndex = hand.findIndex((c) => c.id === card.id);
   if (cardIndex === -1) return;
 
@@ -219,15 +259,13 @@ export default function GamePage() {
     newHand[cardIndex] = nextCard;
     newRemaining = rest;
   } else {
-    newHand.splice(cardIndex, 1); // remove the card entirely
+    newHand.splice(cardIndex, 1);
   }
 
-  // Update local state
   setCardsOnBoard(updatedBoard);
   setHand(newHand);
   setRemainingDeckCards(newRemaining);
 
-  // Save to Firestore
   const gameRef = doc(db, "games", gameId!);
   const handKey = isPlayer1 ? "player1Hand" : "player2Hand";
   const remainingKey = isPlayer1 ? "player1Remaining" : "player2Remaining";
@@ -238,6 +276,7 @@ export default function GamePage() {
     [remainingKey]: newRemaining,
   });
 };
+
 
 
   
