@@ -173,6 +173,7 @@ export default function GamePage() {
     player1Remaining,
     player2Hand,
     player2Remaining,
+    currentTurn: game.player1,
   });
 };
 
@@ -197,7 +198,12 @@ export default function GamePage() {
   }
   
   const handleCardDrop = async (card: UnlockedCard, slotIndex: number) => {
+  if (game.currentTurn !== user.uid) {
+    alert("Det är inte din tur att spela."); //göra något snyggare sen
+  return;
+}
   const realIndex = isPlayer1 ? slotIndex : 5 - slotIndex;
+
 
   if (!allowedSlots.includes(realIndex)) return;
   if (cardsOnBoard[realIndex] !== null) return;
@@ -274,10 +280,16 @@ export default function GamePage() {
     board: updatedBoard,
     [handKey]: newHand,
     [remainingKey]: newRemaining,
+    currentTurn: isPlayer1 ? game.player2 : game.player1, 
   });
 };
 
+const handleWinner = async (card: UnlockedCard, abilityIndex: number) => {
+  //Här kommer jag jämföra kort sen, men venne hur än
 
+
+
+}
 
   
 
