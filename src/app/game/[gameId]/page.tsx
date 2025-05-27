@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { db } from "../../../../lib/firebase";
-import { doc, onSnapshot, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, onSnapshot, getDoc, updateDoc, deleteDoc, collection, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "../../../context/AuthContext";
 import Card from "../../components/card";
 import CustomButton from "@/app/components/customButton";
 import UserBox from "./userBox";
 import { FaCheck } from "react-icons/fa";
+import { FaBars } from "react-icons/fa";
 import { stat } from "fs";
+import Chat from "./chat"; 
 
 type UnlockedCard = {
   id: string;
@@ -30,6 +32,11 @@ export default function GamePage() {
   const [player1DeckSelected, setPlayer1DeckSelected] = useState(false);
   const [player2DeckSelected, setPlayer2DeckSelected] = useState(false);
   const [availableDecks, setAvailableDecks] = useState<Deck[]>([]);
+
+
+  const [menuOpen, setMenuOpen] = useState(false);
+
+
   const router = useRouter();
   const rawParams = useParams();
   const gameId = Array.isArray(rawParams?.gameId) ? rawParams.gameId[0] : rawParams?.gameId;
@@ -44,12 +51,9 @@ export default function GamePage() {
   const [handInitialized, setHandInitialized] = useState(false);
   
 
-  
-
   useEffect(() => {
     if (!gameId || !user) return;
     
-   
     const fetchProfile = async () => {
       try {
         const profileSnap = await getDoc(doc(db, "users", user.uid));
@@ -64,9 +68,10 @@ export default function GamePage() {
             router.push("/");
             return;
           }
-    
+
           const gameData = snapshot.data();
           const isPlayer1 = gameData.player1 === user.uid;
+
 
           if (!gameData.player1 && !gameData.player2) {
             try {
@@ -201,7 +206,7 @@ export default function GamePage() {
   if (game.currentTurn !== user.uid) {
     alert("Det är inte din tur att spela."); //göra något snyggare sen
   return;
-}
+  }
   const realIndex = isPlayer1 ? slotIndex : 5 - slotIndex;
 
 
@@ -280,7 +285,7 @@ export default function GamePage() {
     board: updatedBoard,
     [handKey]: newHand,
     [remainingKey]: newRemaining,
-    currentTurn: isPlayer1 ? game.player2 : game.player1, 
+    currentTurn: isPlayer1 ? game.player2 : game.player1, // Switch turn
   });
 };
 
@@ -347,6 +352,7 @@ const handleWinner = async (card: UnlockedCard, abilityIndex: number) => {
           <div className="absolute bottom-0 flex flex-col justify-center p-4 w-1/7 h-1/4 left-1/2 transform -translate-x-1/2 mb-7 gap-4 pb-8">
           {/* buttons */}
             <div className="">
+            {isPlayer1 ? (
 
               <button
                 onClick={startGame}
@@ -355,6 +361,14 @@ const handleWinner = async (card: UnlockedCard, abilityIndex: number) => {
               >
                 Starta spelet 
               </button>
+              ) : (
+                <h2 className="text-gray-200 text-base text-center fade-in-out">
+                  {!player1DeckSelected || !player2DeckSelected
+                    ? "Väntar på att alla spelare är redo..."
+                    : `Väntar på att ${game.player1Name || "spelare 1"} ska starta spelet...`}
+                </h2>
+              )
+              }
             </div>
 
             <div className="">
@@ -370,17 +384,22 @@ const handleWinner = async (card: UnlockedCard, abilityIndex: number) => {
 
 
           {/* chat */}
-          <div className="flex flex-col space-x-4 p-4 rounded-lg w-1/3 mx-auto h-full">
-            <h2 className="font-bold text-gray-100 text-4xl mb-2 mx-auto">Chat:</h2>
-            <div className="bg-gray-400 rounded-lg shadow-md p-4 h-[300px] overflow-y-auto">
-              <p>Chat messages...</p>
-            </div>
-            </div>
+          {game.status !== "in_progress" && (
+            <div className=" w-1/3 mx-auto ">
+              <Chat
+                gameId={gameId!}
+                userId={user.uid}
+                senderName={game?.player1 === user.uid ? game.player1Name : game.player2Name}
+              />
+              </div>
+          )}
+
       </div>
 
       )}
 
       {game.status === "in_progress" && (
+        <>
         <div className="flex flex-col items-center justify-between min-h-screen">
           <div className="flex flex-col justify-center items-center gap-y-10 w-[55vw] h-[80vh] mx-auto -mt-10 rounded-[10px] shadow-[0_4px_10px_rgba(0,0,0,0.3)] [transform:perspective(700px)_rotateX(25deg)] bg-[url('/images/table2.png')] bg-cover bg-center bg-no-repeat">
             {[0, 1].map((row) => (
@@ -479,7 +498,64 @@ const handleWinner = async (card: UnlockedCard, abilityIndex: number) => {
             })}
           </div>
         </div>
+        {/* Menu Button (Bottom-Left) */}
+        <div className="absolute bottom-4 left-24 z-50">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="bg-gray-400 text-white p-3 rounded-full shadow-lg hover:bg-purple-600"
+          >
+            <FaBars size={40} className="text-purple-600"/>
+          </button>
+
+          {/* Dropdown Menu */}
+          <div
+            className={`transition-all duration-300 origin-bottom-left transform ${
+              menuOpen ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"
+            } mt-2 bg-white rounded-lg shadow-md overflow-hidden`}
+          >
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                alert("Visa regler här (eller öppna modal)");
+              }}
+              className="block px-4 py-2 text-left text-gray-800 hover:bg-gray-100 w-full"
+            >
+              Regler
+            </button>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                leaveGame(); // assuming you already have a leaveGame() function
+              }}
+              className="block px-4 py-2 text-left text-red-600 hover:bg-red-100 w-full"
+            >
+              Ge upp
+            </button>
+          </div>
+        </div>
+
+
+      <div className="absolute bottom-0 right-0 p-4 h-2/6 w-2/7 ">
+      
+        <div className="relative w-full h-full">
+          {/* Background Layer */}
+          <div className="absolute inset-0 bg-gray-800 opacity-50 rounded-lg z-0" />
+
+          {/* Foreground: Chat */}
+          <div className="relative z-10 h-full">
+            <Chat
+              gameId={gameId!}
+              userId={user.uid}
+              senderName={game?.player1 === user.uid ? game.player1Name : game.player2Name}
+            />
+          </div>
+
+        </div>
+
+      </div>
+      </>
       )}
+      
     </div>
   );
 }

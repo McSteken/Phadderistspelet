@@ -108,3 +108,11 @@ button {
   scrollbar-width: thin;
   scrollbar-color: #374151 #111827;
 }
+
+@keyframes fade-in-out {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.fade-in-out {
+  animation: fade-in-out 2s ease-in-out infinite;
+}
