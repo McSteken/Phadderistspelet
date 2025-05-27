@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "../../../lib/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { db } from "../../../lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore"; // Import Firestore functions
 import { collection, getDocs, query, where } from "firebase/firestore"; // Import Firestore functions
@@ -148,7 +148,7 @@ export default function LoginPage() {
                   createdAt: new Date(),
                 });}
                 catch (err) {
-                    console.error("🔥 Failed to write to /users:", err);
+                    console.error("Failed to write to /users:", err);
                     setError("Error writing user profile: " + (err instanceof Error ? err.message : "Unknown error"));
                     return;
                                   }
@@ -161,8 +161,19 @@ export default function LoginPage() {
                     createdAt: new Date(),
                 });
                 } catch (err) {
-                    console.error("🔥 Failed to write to /usernames:", err);
+                    console.error("Failed to write to /usernames:", err);
                     setError("Error writing username index: " + (err instanceof Error ? err.message : "Unknown error"));
+                    return;
+                }
+                try{
+                    await updateProfile(user, {
+                        displayName: username,
+                        photoURL: `https://api.dicebear.com/7.x/identicon/svg?seed=${username}` // or your own image
+                    });
+                }
+                catch (err) {
+                    console.error("Failed to update profile:", err);
+                    setError("Error updating profile: " + (err instanceof Error ? err.message : "Unknown error"));
                     return;
                 }
                   

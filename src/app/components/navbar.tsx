@@ -49,6 +49,11 @@ export default function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+  console.log("User object:", user);
+}, [user]);
+
+
   
   return (
   <div className='fixed top-0 left-0 w-full z-10'>
@@ -72,7 +77,15 @@ export default function Navbar() {
         {user ? (
           <div className="relative">
             <button onClick={toggleDropdown} className="hover:outline-none flex items-center">
-              <FaUserCircle className="h-8 w-8" />
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt="Profilbild"
+                  className="h-8 w-8 rounded-full object-cover border-2 border-white"
+                />
+              ) : (
+                <FaUserCircle className="h-8 w-8" />
+              )}
             </button>
             {dropdownOpen && (
               <div ref={dropdownRef} className="absolute right-0 mt-4 w-48 bg-white text-black rounded shadow-lg z-10">
