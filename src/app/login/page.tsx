@@ -168,7 +168,6 @@ export default function LoginPage() {
                 try{
                     await updateProfile(user, {
                         displayName: username,
-                        photoURL: `https://api.dicebear.com/7.x/identicon/svg?seed=${username}` // or your own image
                     });
                 }
                 catch (err) {

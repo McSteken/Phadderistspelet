@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db, storage } from "../../../lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, updateProfile } from "firebase/auth";
 import { doc, getDoc, updateDoc, deleteDoc, setDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Navbar from "../components/navbar";
@@ -71,6 +71,7 @@ export default function BoardPage() {
 
     const userDocRef = doc(db, "users", auth.currentUser.uid);
     await updateDoc(userDocRef, { photoURL: downloadURL });
+    await updateProfile(auth.currentUser, { photoURL: downloadURL });
 
     setProfile((prev) => prev && { ...prev, photoURL: downloadURL });
   };
@@ -88,24 +89,27 @@ export default function BoardPage() {
     const newUsernameDocRef = doc(db, "usernames", newUsername);
 
     try {
-      // 1. Update users collection
+      // Update users collection
       await updateDoc(userDocRef, {
         username: newUsername,
         lowercaseUsername: newLower,
         email: editedEmail,
       });
 
-      // 2. Remove old entry in usernames collection
+      // Remove old entry in usernames collection
       if (oldUsername !== newUsername) {
         await deleteDoc(oldUsernameDocRef);
       }
 
-      // 3. Add new entry in usernames collection
+      // Add new entry in usernames collection
       await setDoc(newUsernameDocRef, {
         email: editedEmail,
       });
+      await updateProfile(auth.currentUser, {
+        displayName: newUsername,
+      });
 
-      // 4. Update local state
+      // Update local state
       setProfile({
         ...profile,
         username: newUsername,
