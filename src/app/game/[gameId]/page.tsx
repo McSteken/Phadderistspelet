@@ -12,6 +12,7 @@ import { FaCheck } from "react-icons/fa";
 import { FaBars } from "react-icons/fa";
 import { stat } from "fs";
 import Chat from "./chat"; 
+import ReadyButton from "./ReadyButton";
 
 type UnlockedCard = {
   id: string;
@@ -32,7 +33,6 @@ export default function GamePage() {
   const [player1DeckSelected, setPlayer1DeckSelected] = useState(false);
   const [player2DeckSelected, setPlayer2DeckSelected] = useState(false);
   const [availableDecks, setAvailableDecks] = useState<Deck[]>([]);
-
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -117,6 +117,98 @@ export default function GamePage() {
 
     fetchProfile();
   }, [gameId, user, router]);
+const getPowerFromCard = (card: any, index: number): number => {
+  switch (index) {
+    case 0: return card.power1Str ?? 0;
+    case 1: return card.power2Str ?? 0;
+    case 2: return card.power3Str ?? 0;
+    default: return 0;
+  }
+};
+
+const isEffective = (a: number, b: number) =>
+  (a === 0 && b === 1) || (a === 1 && b === 2) || (a === 2 && b === 0);
+
+
+const resolveTurn = async () => {
+  const board = game.board;
+  const gameRef = doc(db, "games", gameId!);
+
+  const slot1 = game.player1SelectedSlot;
+  const slot2 = game.player2SelectedSlot;
+
+  const tile1 = board[slot1];
+  const tile2 = board[slot2];
+
+  if (!tile1?.card || !tile2?.card) return;
+
+  const card1Snap = await getDoc(doc(db, tile1.card.collection, tile1.card.id));
+  const card2Snap = await getDoc(doc(db, tile2.card.collection, tile2.card.id));
+  if (!card1Snap.exists() || !card2Snap.exists()) return;
+
+  const card1 = card1Snap.data();
+  const card2 = card2Snap.data();
+
+  const powerIndex1 = getPowerIndexFromSlot(slot1, true);
+  const powerIndex2 = getPowerIndexFromSlot(slot2, false);
+
+  const power1 = getPowerFromCard(card1, powerIndex1);
+  const power2 = getPowerFromCard(card2, powerIndex2);
+
+  const bonus1 = isEffective(powerIndex1, powerIndex2) ? 2 : 0;
+  const bonus2 = isEffective(powerIndex2, powerIndex1) ? 2 : 0;
+
+  const total1 = power1 + bonus1;
+  const total2 = power2 + bonus2;
+
+  let updatedScores = { ...game.scores };
+
+  if (total1 > total2) {
+    updatedScores.player1 += 1;
+  } else if (total2 > total1) {
+    updatedScores.player2 += 1;
+  } // draw = no points
+
+  // Check for win
+  const winner = updatedScores.player1 >= 5
+    ? game.player1Name
+    : updatedScores.player2 >= 5
+    ? game.player2Name
+    : null;
+
+  await updateDoc(gameRef, {
+    board: Array(6).fill(null),
+    player1Ready: false,
+    player2Ready: false,
+    player1Played: false,
+    player2Played: false,
+    player1SelectedSlot: null,
+    player2SelectedSlot: null,
+    scores: updatedScores,
+    ...(winner && { status: "finished", winner }),
+  });
+
+  if (winner) {
+    alert(`${winner} vinner matchen!`);
+  }
+};
+
+
+// Ready funktioner
+
+const handleReadyClick = async () => {
+  const gameRef = doc(db, "games", gameId!);
+  const field = isPlayer1 ? "player1Ready" : "player2Ready";
+  await updateDoc(gameRef, { [field]: true });
+};
+
+useEffect(() => {
+  if (game?.player1Ready && game?.player2Ready) {
+    resolveTurn();
+  }
+}, [game]);
+
+
 
   if (loading || !user) {
     return <div className="p-4">Laddar spel…</div>;
@@ -178,7 +270,18 @@ export default function GamePage() {
     player1Remaining,
     player2Hand,
     player2Remaining,
-    currentTurn: game.player1,
+    
+    player1SelectedSlot: null,
+    player2SelectedSlot: null,
+    player1Ready: false,
+    player2Ready: false,
+    player1Played: false,
+    player2Played: false,
+    scores: {
+      player1: 0,
+      player2: 0,
+    },
+    winner: null,
   });
 };
 
@@ -203,9 +306,11 @@ export default function GamePage() {
   }
   
   const handleCardDrop = async (card: UnlockedCard, slotIndex: number) => {
-  if (game.currentTurn !== user.uid) {
-    alert("Det är inte din tur att spela."); //göra något snyggare sen
-  return;
+  
+  // only allow if player hasnt played yet
+  if (game[isPlayer1 ? "player1Played" : "player2Played"]) {
+    console.warn("Du har redan spelat denna runda.");
+    return;
   }
   const realIndex = isPlayer1 ? slotIndex : 5 - slotIndex;
 
@@ -221,7 +326,6 @@ export default function GamePage() {
 
   console.log(card.id, "dropped on slot", realIndex);
 
-  // 🔍 Fetch card details from the correct collection
   try {
     const cardDocRef = doc(db, card.collection, card.id);
     const cardSnap = await getDoc(cardDocRef);
@@ -285,254 +389,290 @@ export default function GamePage() {
     board: updatedBoard,
     [handKey]: newHand,
     [remainingKey]: newRemaining,
-    currentTurn: isPlayer1 ? game.player2 : game.player1, // Switch turn
+    [`${isPlayer1 ? "player1" : "player2"}Played`]: true,
+    [`${isPlayer1 ? "player1" : "player2"}SelectedSlot`]: realIndex,
+    [`${isPlayer1 ? "player1" : "player2"}Ready`]: true,
+
   });
+
+  console.log("Player", isPlayer1 ? "1" : "2", "played status:", game[isPlayer1 ? "player1Played" : "player2Played"]);
+  console.log("Player", isPlayer1 ? "1" : "2", "selected slot:", realIndex);
+    console.log("Player", isPlayer1 ? "1" : "2", "ready status:", game[isPlayer1 ? "player1Ready" : "player2Ready"]);
+
 };
 
-const handleWinner = async (card: UnlockedCard, abilityIndex: number) => {
-  //Här kommer jag jämföra kort sen, men venne hur än
+const getPowerIndexFromSlot = (slot: number, isPlayer1: boolean) => {
+  if (isPlayer1) return slot - 3;
+  else return 2 - slot;
+};
 
-
-
-}
 
   
 
+const isGameReady = player1DeckSelected && player2DeckSelected;
 
-
-  const isGameReady = player1DeckSelected && player2DeckSelected;
-
-  return (
-    <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-r from-gray-800 to-gray-200 overflow-hidden max-h-screen">
-      {/*       
-      <h2 className="text-2xl mb-4">Spel: {game.name}</h2>
-      <p>Player 1: {game.player1Name}</p>
-      <p>Player 2: {game.player2Name || "Väntar på spelare..."}</p>
-      <p>Status: {game.status}</p> 
-      */}
-      {game.status === "in_progress" ? (
-        <div className="flex justify-between w-full px-4 py-2 items-end bg-black bg-opacity-40">
-          <p className="text-white text-sm mt-8">{game.player1Name}</p>
-          <p className="text-white text-sm mt-8">{game.player2Name}</p>
-        </div>
-      ) : (
-        <div className="flex justify-between w-screen px-4 mt-12 h-1/2">
-          <UserBox
-            name={game.player1Name || "Väntar på spelare..."}
-            profilePicture={game.player1ProfilePic}
-            isReady={player1DeckSelected}
-          />
-          <UserBox
-            name={game.player2Name || "Väntar på spelare..."}
-            profilePicture={game.player2ProfilePic}
-            isReady={player2DeckSelected}
-          />
-        </div>
-        )}
-
-      {game.status !== "in_progress" && (
-        <div className="flex justify-between w-screen px-4 mt-12 h-1/3">
-
-          {/* decks */}
-          <div className="grid grid-cols-3 grid-rows-4 gap-3 p-4 rounded-lg w-1/3 mx-auto  place-items-start items-start">
-            <h2 className="font-bold text-gray-100 text-4xl mx-auto col-span-3">Välj ett deck:</h2>
-            {availableDecks.map((deck: Deck) => (
-              <button
-                key={deck.id}
-                onClick={() => handleDeckSelection(deck)}
-                className={`bg-blue-600 text-white w-full h-12 rounded hover:bg-purple-700 flex items-center justify-center mx-auto hover:bg-purple-800 ${
-                  selectedDeck?.id === deck.id ? "ring-2 ring-gray-100 bg-purple-900" : ""}`}
-              >
-                <h2 className="text-sm">{deck.name}</h2>
-                {selectedDeck?.id === deck.id && <FaCheck className="ml-2 text-green-400" />}
-              </button>
-            ))}
-          </div>  
-
-          <div className="absolute bottom-0 flex flex-col justify-center p-4 w-1/7 h-1/4 left-1/2 transform -translate-x-1/2 mb-7 gap-4 pb-8">
-          {/* buttons */}
-            <div className="">
-            {isPlayer1 ? (
-
-              <button
-                onClick={startGame}
-                disabled={!isGameReady}
-                className={`bg-green-600 text-white px-4 py-2 rounded ${isGameReady ? "hover:bg-green-800 hover:border-gray-400 shadow-sm hover:shadow-md active:scale-95" : "opacity-50 cursor-wait"} transition duration-300 border-2 border-gray-300 w-full`}
-              >
-                Starta spelet 
-              </button>
-              ) : (
-                <h2 className="text-gray-200 text-base text-center fade-in-out">
-                  {!player1DeckSelected || !player2DeckSelected
-                    ? "Väntar på att alla spelare är redo..."
-                    : `Väntar på att ${game.player1Name || "spelare 1"} ska starta spelet...`}
-                </h2>
-              )
-              }
-            </div>
-
-            <div className="">
-              <button
-                onClick={leaveGame}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-300 border-2 border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md active:scale-95 w-full"
-              >
-                Lämna spelet
-              </button>
-            </div>
-          </div>
-
-
-
-          {/* chat */}
-          {game.status !== "in_progress" && (
-            <div className=" w-1/3 mx-auto ">
-              <Chat
-                gameId={gameId!}
-                userId={user.uid}
-                senderName={game?.player1 === user.uid ? game.player1Name : game.player2Name}
-              />
-              </div>
-          )}
-
+return (
+  <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-r from-gray-800 to-gray-200 overflow-hidden max-h-screen">
+    {/*       
+    <h2 className="text-2xl mb-4">Spel: {game.name}</h2>
+    <p>Player 1: {game.player1Name}</p>
+    <p>Player 2: {game.player2Name || "Väntar på spelare..."}</p>
+    <p>Status: {game.status}</p> 
+    */}
+    {game.status === "in_progress" ? (
+      <div className="flex justify-between w-full px-4 py-2 items-end bg-black bg-opacity-40">
+        <p className="text-white text-sm mt-8">{game.player1Name}</p>
+        <p className="text-white text-sm mt-8">{game.player2Name}</p>
       </div>
-
+    ) : (
+      <div className="flex justify-between w-screen px-4 mt-12 h-1/2">
+        <UserBox
+          name={game.player1Name || "Väntar på spelare..."}
+          profilePicture={game.player1ProfilePic}
+          isReady={player1DeckSelected}
+        />
+        <UserBox
+          name={game.player2Name || "Väntar på spelare..."}
+          profilePicture={game.player2ProfilePic}
+          isReady={player2DeckSelected}
+        />
+      </div>
       )}
 
-      {game.status === "in_progress" && (
-        <>
-        <div className="flex flex-col items-center justify-between min-h-screen">
-          <div className="flex flex-col justify-center items-center gap-y-10 w-[55vw] h-[80vh] mx-auto -mt-10 rounded-[10px] shadow-[0_4px_10px_rgba(0,0,0,0.3)] [transform:perspective(700px)_rotateX(25deg)] bg-[url('/images/table2.png')] bg-cover bg-center bg-no-repeat">
-            {[0, 1].map((row) => (
-              <div key={row} className="flex gap-16 justify-center">
-                {[0, 1, 2].map((col) => {
-                  const index = row * 3 + col;
-                  const boardIndex = isPlayer1 ? index : 5 - index;
-                  const tile = cardsOnBoard[boardIndex];
-                  const isAllowed = allowedSlots.includes(boardIndex);
+    {game.status !== "in_progress" && (
+      <div className="flex justify-between w-screen px-4 mt-12 h-1/3">
 
-                  return (
-                    <div
-                      key={index}
-                      className={`w-[120px] h-[160px] border-2 rounded-lg flex items-center justify-center relative transition-transform duration-300 
-                        ${isAllowed ? "border-purple-500 border-dashed bg-white/30" : "border-gray-300 bg-white/10"}
-                        ${!tile ? "hover:scale-110 cursor-pointer" : ""}
-                      `}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        const cardId = e.dataTransfer.getData("cardId");
-                        const card = hand.find((c) => c.id === cardId);
-                        if (card) handleCardDrop(card, index);
-                      }}
-                      onClick={() => {
-                        if (isMobile && mobileSelectedCard && !tile) {
-                          handleCardDrop(mobileSelectedCard, index);
-                          setMobileSelectedCard(null);
-                          setFocusedCardId(null);
-                        }
-                      }}
-                    >
-                      {tile?.card ? (
-                        <Card cardId={tile.card.id} collectionName={tile.card.collection} />
-                      ) : (
-                        <p className="text-gray-400 text-sm">Place card</p>
-                      )}
-                    </div>
-                  );
-                })}
+        {/* decks */}
+        <div className="grid grid-cols-3 grid-rows-4 gap-3 p-4 rounded-lg w-1/3 mx-auto  place-items-start items-start">
+          <h2 className="font-bold text-gray-100 text-4xl mx-auto col-span-3">Välj ett deck:</h2>
+          {availableDecks.map((deck: Deck) => (
+            <button
+              key={deck.id}
+              onClick={() => handleDeckSelection(deck)}
+              className={`bg-blue-600 text-white w-full h-12 rounded hover:bg-purple-700 flex items-center justify-center mx-auto hover:bg-purple-800 ${
+                selectedDeck?.id === deck.id ? "ring-2 ring-gray-100 bg-purple-900" : ""}`}
+            >
+              <h2 className="text-sm">{deck.name}</h2>
+              {selectedDeck?.id === deck.id && <FaCheck className="ml-2 text-green-400" />}
+            </button>
+          ))}
+        </div>  
+
+        <div className="absolute bottom-0 flex flex-col justify-center p-4 w-1/7 h-1/4 left-1/2 transform -translate-x-1/2 mb-7 gap-4 pb-8">
+        {/* buttons */}
+          <div className="">
+          {isPlayer1 ? (
+
+            <button
+              onClick={startGame}
+              disabled={!isGameReady}
+              className={`bg-green-600 text-white px-4 py-2 rounded ${isGameReady ? "hover:bg-green-800 hover:border-gray-400 shadow-sm hover:shadow-md active:scale-95" : "opacity-50 cursor-wait"} transition duration-300 border-2 border-gray-300 w-full`}
+            >
+              Starta spelet 
+            </button>
+            ) : (
+              <h2 className="text-gray-200 text-base text-center fade-in-out">
+                {!player1DeckSelected || !player2DeckSelected
+                  ? "Väntar på att alla spelare är redo..."
+                  : `Väntar på att ${game.player1Name || "spelare 1"} ska starta spelet...`}
+              </h2>
+            )
+            }
+          </div>
+
+          <div className="">
+            <button
+              onClick={leaveGame}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-300 border-2 border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md active:scale-95 w-full"
+            >
+              Lämna spelet
+            </button>
+          </div>
+        </div>
+
+
+
+        {/* chat */}
+        {game.status !== "in_progress" && (
+          <div className=" w-1/3 mx-auto ">
+            <Chat
+              gameId={gameId!}
+              userId={user.uid}
+              senderName={game?.player1 === user.uid ? game.player1Name : game.player2Name}
+            />
+            </div>
+        )}
+
+    </div>
+
+    )}
+
+    {game.status === "in_progress" && (
+
+      
+      <>
+      <div className="mt-6 flex items-center justify-center gap-10">
+        <div className="bg-white rounded px-4 py-2 shadow-md text-center min-w-[100px]">
+          <p className="text-gray-700 font-semibold">{game.player1Name}</p>
+          <p className="text-2xl font-bold text-purple-700">{game.scores?.player1 ?? 0}</p>
+        </div>
+        <div className="text-white font-bold text-xl">VS</div>
+        <div className="bg-white rounded px-4 py-2 shadow-md text-center min-w-[100px]">
+          <p className="text-gray-700 font-semibold">{game.player2Name}</p>
+          <p className="text-2xl font-bold text-purple-700">{game.scores?.player2 ?? 0}</p>
+        </div>
+      </div>
+
+
+
+      <div className="flex flex-col items-center justify-between min-h-screen">
+        <div className="flex flex-col justify-center items-center gap-y-10 w-[55vw] h-[80vh] mx-auto -mt-10 rounded-[10px] shadow-[0_4px_10px_rgba(0,0,0,0.3)] [transform:perspective(700px)_rotateX(25deg)] bg-[url('/images/table2.png')] bg-cover bg-center bg-no-repeat">
+          {[0, 1].map((row) => (
+            <div key={row} className="flex gap-16 justify-center">
+              {[0, 1, 2].map((col) => {
+                const index = row * 3 + col;
+                const boardIndex = isPlayer1 ? index : 5 - index;
+                const tile = cardsOnBoard[boardIndex];
+                const isAllowed = allowedSlots.includes(boardIndex);
+
+                return (
+                  <div
+                    key={index}
+                    className={`w-[120px] h-[160px] border-2 rounded-lg flex items-center justify-center relative transition-transform duration-300 
+                      ${isAllowed ? "border-purple-500 border-dashed bg-white/30" : "border-gray-300 bg-white/10"}
+                      ${!tile ? "hover:scale-110 cursor-pointer" : ""}
+                    `}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      const cardId = e.dataTransfer.getData("cardId");
+                      const card = hand.find((c) => c.id === cardId);
+                      if (card) handleCardDrop(card, index);
+                    }}
+                    onClick={() => {
+                      if (isMobile && mobileSelectedCard && !tile) {
+                        handleCardDrop(mobileSelectedCard, index);
+                        setMobileSelectedCard(null);
+                        setFocusedCardId(null);
+                      }
+                    }}
+                  >
+                    {tile?.card ? (
+                      <Card cardId={tile.card.id} collectionName={tile.card.collection} />
+                    ) : (
+                      <p className="text-gray-400 text-sm">Place card</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Player hand */}
+        <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-0">
+          {hand.map((card, index) => {
+            const isFocused = focusedCardId === card.id;
+            const isSelected = mobileSelectedCard?.id === card.id;
+            const defaultRotation = `${(index - hand.length / 2 + 0.5) * 5}deg`;
+
+            return (
+              <div
+                key={card.id}
+                className={`relative w-40 h-56 cursor-pointer transition-transform duration-300 ${
+                  !isMobile ? "hover:-translate-y-12 hover:scale-150" : ""
+                } ${isSelected ? "ring-4 ring-purple-500" : ""}`}
+                style={{
+                  marginLeft: index > 0 ? "-1.5rem" : "0",
+                  marginRight: index < hand.length - 1 ? "-1.5rem" : "0",
+                  rotate: isMobile && isFocused ? "0deg" : defaultRotation,
+                  zIndex: isMobile && isFocused ? 100 : index,
+                  transform: isMobile && isFocused ? "translateY(-50%) scale(2)" : undefined,
+                }}
+                draggable={!isMobile}
+                onDragStart={
+                  !isMobile
+                    ? (e) => e.dataTransfer.setData("cardId", card.id)
+                    : undefined
+                }
+                onMouseEnter={
+                  !isMobile
+                    ? (e) => {
+                        e.currentTarget.style.rotate = "0deg";
+                        e.currentTarget.style.zIndex = "100";
+                      }
+                    : undefined
+                }
+                onMouseLeave={
+                  !isMobile
+                    ? (e) => {
+                        e.currentTarget.style.rotate = defaultRotation;
+                        e.currentTarget.style.zIndex = `${index}`;
+                      }
+                    : undefined
+                }
+                onClick={() => {
+                  if (isMobile) {
+                    setMobileSelectedCard((prev) => (prev?.id === card.id ? null : card));
+                    setFocusedCardId((prev) => (prev === card.id ? null : card.id));
+                  }
+                }}
+              >
+                <Card cardId={card.id} collectionName={card.collection} />
               </div>
-            ))}
-          </div>
-
-          {/* Player hand */}
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-0">
-            {hand.map((card, index) => {
-              const isFocused = focusedCardId === card.id;
-              const isSelected = mobileSelectedCard?.id === card.id;
-              const defaultRotation = `${(index - hand.length / 2 + 0.5) * 5}deg`;
-
-              return (
-                <div
-                  key={card.id}
-                  className={`relative w-40 h-56 cursor-pointer transition-transform duration-300 ${
-                    !isMobile ? "hover:-translate-y-12 hover:scale-150" : ""
-                  } ${isSelected ? "ring-4 ring-purple-500" : ""}`}
-                  style={{
-                    marginLeft: index > 0 ? "-1.5rem" : "0",
-                    marginRight: index < hand.length - 1 ? "-1.5rem" : "0",
-                    rotate: isMobile && isFocused ? "0deg" : defaultRotation,
-                    zIndex: isMobile && isFocused ? 100 : index,
-                    transform: isMobile && isFocused ? "translateY(-50%) scale(2)" : undefined,
-                  }}
-                  draggable={!isMobile}
-                  onDragStart={
-                    !isMobile
-                      ? (e) => e.dataTransfer.setData("cardId", card.id)
-                      : undefined
-                  }
-                  onMouseEnter={
-                    !isMobile
-                      ? (e) => {
-                          e.currentTarget.style.rotate = "0deg";
-                          e.currentTarget.style.zIndex = "100";
-                        }
-                      : undefined
-                  }
-                  onMouseLeave={
-                    !isMobile
-                      ? (e) => {
-                          e.currentTarget.style.rotate = defaultRotation;
-                          e.currentTarget.style.zIndex = `${index}`;
-                        }
-                      : undefined
-                  }
-                  onClick={() => {
-                    if (isMobile) {
-                      setMobileSelectedCard((prev) => (prev?.id === card.id ? null : card));
-                      setFocusedCardId((prev) => (prev === card.id ? null : card.id));
-                    }
-                  }}
-                >
-                  <Card cardId={card.id} collectionName={card.collection} />
-                </div>
-              );
-            })}
-          </div>
+            );
+          })}
         </div>
-        {/* Menu Button (Bottom-Left) */}
-        <div className="absolute bottom-4 left-24 z-50">
+      </div>
+
+      {/* Ready knapp */}
+      <div className="mt-6 flex flex-col items-center gap-2">
+        <ReadyButton
+          isReady={game[isPlayer1 ? "player1Ready" : "player2Ready"]}
+          onClick={handleReadyClick}
+        />
+        <p className="text-white text-sm">
+          {game[isPlayer1 ? "player2Ready" : "player1Ready"]
+            ? "Motståndaren är redo!"
+            : "Motståndaren väntar..."}
+        </p>
+      </div>
+
+
+      {/* Menu Button */}
+      <div className="absolute bottom-4 left-24 z-50">
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="bg-gray-400 text-white p-3 rounded-full shadow-lg hover:bg-purple-600"
+        >
+          <FaBars size={40} className="text-purple-600"/>
+        </button>
+
+        {/* Dropdown Menu */}
+        <div
+          className={`transition-all duration-300 origin-bottom-left transform ${
+            menuOpen ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"
+          } mt-2 bg-white rounded-lg shadow-md overflow-hidden`}
+        >
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="bg-gray-400 text-white p-3 rounded-full shadow-lg hover:bg-purple-600"
+            onClick={() => {
+              setMenuOpen(false);
+              alert("Visa regler här (eller öppna modal)");
+            }}
+            className="block px-4 py-2 text-left text-gray-800 hover:bg-gray-100 w-full"
           >
-            <FaBars size={40} className="text-purple-600"/>
+            Regler
           </button>
-
-          {/* Dropdown Menu */}
-          <div
-            className={`transition-all duration-300 origin-bottom-left transform ${
-              menuOpen ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"
-            } mt-2 bg-white rounded-lg shadow-md overflow-hidden`}
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              leaveGame(); // assuming you already have a leaveGame() function
+            }}
+            className="block px-4 py-2 text-left text-red-600 hover:bg-red-100 w-full"
           >
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                alert("Visa regler här (eller öppna modal)");
-              }}
-              className="block px-4 py-2 text-left text-gray-800 hover:bg-gray-100 w-full"
-            >
-              Regler
-            </button>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                leaveGame(); // assuming you already have a leaveGame() function
-              }}
-              className="block px-4 py-2 text-left text-red-600 hover:bg-red-100 w-full"
-            >
-              Ge upp
-            </button>
-          </div>
+            Ge upp
+          </button>
         </div>
+      </div>
 
 
       <div className="absolute bottom-0 right-0 p-4 h-2/6 w-2/7 ">
