@@ -13,9 +13,8 @@ Vi är föreningsaktiva på campus Norrköping i två olika fadderier där vi sk
 hemsidor till våra fadderier till nästa mottagning. Alla fadderier har fysiska spelkort som de ger ut till
 nya studenter under mottagningsperioden. Våran ide är att få det spelet till webben.
 
+Demo: https://youtu.be/gcDUHClD8g8
+Teo:
+Gustaf:
+Simon:
 
-Att göra:
-1. Matchmaking
-2. Spelmekanik
-3. Filtrera kort
-4. CSS / Grafisk profil
