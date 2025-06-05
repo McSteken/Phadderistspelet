@@ -16,5 +16,6 @@ nya studenter under mottagningsperioden. Våran ide är att få det spelet till 
 Demo: https://youtu.be/gcDUHClD8g8
 Teo:
 Gustaf:
-Simon:
+Simon: https://youtu.be/pF2j_rPPTO0
+
 
