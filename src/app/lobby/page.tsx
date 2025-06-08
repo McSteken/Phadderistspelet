@@ -43,7 +43,7 @@ export default function Play() {
         player1: user.uid,
         player1Name: username,
         player1ProfilePic: profilePic,
-        player1Deck: null, // Don't assign here, let them select
+        player1Deck: null, 
         player2: null,
         player2Name: null,
         player2Deck: null,
@@ -63,7 +63,7 @@ export default function Play() {
 
   return (
     <div className="flex justify-center items-center h-screen bg-gradient-to-r from-gray-800 to-gray-200 overflow-hidden max-h-screen">
-      <Navbar /> {/* Include Navbar component */}
+      <Navbar /> 
       <div className="flex flex-col items-center p-4 bg-gray-300 rounded-lg shadow-md w-1/3 gap-4">
         <h1 className="text-2xl font-semibold text-gray-800 mt-2">Skapa ett nytt spel</h1>
         <h2 className="text-2xl text-gray-600">Välj ett namn för ditt spel</h2>

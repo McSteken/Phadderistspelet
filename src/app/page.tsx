@@ -36,7 +36,7 @@ export default function Home() {
 
             if (docSnap.exists()) {
               const data = docSnap.data();
-              setUsername(data.username); // assuming the field is called "username"
+              setUsername(data.username);
             } 
             else {
               console.log("No username found!");
@@ -50,7 +50,7 @@ export default function Home() {
 
 
       fetchUsername();
-    }, [user]); // Run this effect when the user changes
+    }, [user]); 
 
     const [backgroundCards, setBackgroundCards] = useState<{ id: string, collection: "Legionen" | "Skurkeriet" }[]>([]);
 
@@ -65,7 +65,7 @@ export default function Home() {
           ...col2.docs.map(doc => ({ id: doc.id, collection: "Skurkeriet" as const })),
         ];
 
-        // Shuffle and take first 5
+        // Shuffle and take first 20
         const shuffled = allCards.sort(() => 0.5 - Math.random()).slice(0, 20);
         setBackgroundCards(shuffled);
       };
