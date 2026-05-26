@@ -1,6 +1,6 @@
 # TDDD27_2025_simhe960_guskr150_teohe874
 
-Framwork: NextJS
+Framework: NextJS
 
 Vi vill göra ett kortspel på webben, där vi hämtar information i en databas med dessa kort. 
 Spelmekaniken är baserat på pokemon/hearthstone/magic men simplare. Användaren ska kunna söka i 
