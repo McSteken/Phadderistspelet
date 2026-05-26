@@ -14,8 +14,6 @@ hemsidor till våra fadderier till nästa mottagning. Alla fadderier har fysiska
 nya studenter under mottagningsperioden. Våran ide är att få det spelet till webben.
 
 Demo: https://youtu.be/gcDUHClD8g8
-Teo: https://youtu.be/WbSpM_nyo2s
-Gustaf: https://youtu.be/h8aNeGtnnek
-Simon: https://youtu.be/pF2j_rPPTO0
+
 
 
